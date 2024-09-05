@@ -1,8 +1,8 @@
 # shippy
 ## battleship-like game
 
-** How to Play **
+**How to Play**
 
-** Technologies Used **
+**Technologies Used**
 
-** Additional Resources **
+**Additional Resources**
