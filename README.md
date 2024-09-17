@@ -1,14 +1,4 @@
 # shippy
-
-
-         __    _                  
-   _____/ /_  (_)___  ____  __  __
-  / ___/ __ \/ / __ \/ __ \/ / / /
- (__  ) / / / / /_/ / /_/ / /_/ / 
-/____/_/ /_/_/ .___/ .___/\__, /  
-            /_/   /_/    /____/   
-
-
 ## a battleship-like game implemented using python & sockets
 ### by Alex Brown, Kyle Jager, and Chris Urbano
 **How to Play**
