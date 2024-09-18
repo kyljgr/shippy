@@ -1,6 +1,7 @@
 # shippy
 ## a battleship-like game implemented using python & sockets
 ### by Alex Brown, Kyle Jager, and Chris Urbano
+#### This README is a living document. As we continue to imrpove and make changes, we will update this to best reflect the status of our project.
 **How to Play**
 1. Clone this repository.
 2. **Start the server:** run the `server.py` script.
