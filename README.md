@@ -6,7 +6,7 @@
 1. Clone this repository.
 2. **Start the server:** run the `server.py` script.
 3. **Connect clients:** Run the `client.py` script on two different machines or terminals.
-4. **Start playing:** Players will input the coordinates they'd like to place their three ships at. Once that is completed, players take turns trying to guess where the opponents ships are at in order to sink them.
+4. **Start playing:** See **Rules**.
 
 **Rules**
 * Each player places 5 different 'boats' on their grid using coordinates (5L, 4L, 3L, 3L, 2L).
