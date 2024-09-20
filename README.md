@@ -21,3 +21,5 @@
 * Sockets
 
 **Additional Resources**
+[Python 3.12.6 Documentation](https://docs.python.org/3/)
+[Python Socket Programming guide from Real Python](https://realpython.com/python-sockets/)
