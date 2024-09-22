@@ -15,7 +15,7 @@ Alex Brown, Kyle Jager, Chris Urbano
 
 [comment]: # ([Briefly describe the goal of the project. What problem are you trying to solve or what functionality are you aiming to achieve?])
 
-A simple battleship type game played in the command line. 
+A command-line Battleship-style game implemented with socket programming, enabling real-time interaction and updates between two players.
 
 ### Scope:
 
@@ -59,6 +59,8 @@ A simple battleship type game played in the command line. 
 
 #### Task Breakdown:
 
+[comment]: # ([Create a detailed breakdown of tasks, assigning estimated hours or days to each.])
+
 -   Server code ?
 
 -   Client code ?
@@ -69,7 +71,7 @@ A simple battleship type game played in the command line. 
 
 [comment]: # ([Specify any hardware requirements, such as servers, networking equipment, or specific devices.])
 
--   ??
+-   TBD
 
 #### Software:
 
@@ -79,7 +81,7 @@ A simple battleship type game played in the command line. 
 
 -   Socket programming
 
--   ??
+-   TBD
 
 ### Assumptions:
 
