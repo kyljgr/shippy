@@ -61,9 +61,21 @@ A command-line Battleship-style game implemented with socket programming, enabli
 
 [comment]: # ([Create a detailed breakdown of tasks, assigning estimated hours or days to each.])
 
--   Server code ?
+1. implement core game logic
+  * Estimated Time: 2-3 days
+2. Implement client/server communication
+  * Estimated Time: 1-2 days
+3. Error handling
+  * Estimated Time: 1 day
 
--   Client code ?
+- Client code:
+1. Develop client connection and Ui
+  * Estimated Time: 2-3 days
+2. Game Logic
+  * Estimated Time: 1-2 days
+Overall Project:
+1. Testing and Integration
+  * Estimated Time: 2-3 days
 
 ### Technical Requirements:
 
@@ -71,7 +83,12 @@ A command-line Battleship-style game implemented with socket programming, enabli
 
 [comment]: # ([Specify any hardware requirements, such as servers, networking equipment, or specific devices.])
 
--   TBD
+-   CPU: modern processor
+-   RAM: 2gb or more
+-   Storage: Our program doesnt require much space to run.
+-   Network: Stable inernet connection.
+-   Graphics: we are using a terminal so graphics are minimal.
+
 
 #### Software:
 
