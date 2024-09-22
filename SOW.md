@@ -15,7 +15,7 @@ Alex Brown, Kyle Jager, Chris Urbano
 
 [comment]: # ([Briefly describe the goal of the project. What problem are you trying to solve or what functionality are you aiming to achieve?])
 
-A simple battleship type game run via the command line. 
+A simple battleship type game played in the command line. 
 
 ### Scope:
 
@@ -91,17 +91,21 @@ A simple battleship type game run via the command line. 
 
 [comment]: # ([Define the roles of team members, including project manager, developers, testers, etc., and their responsibilities.])
 
--   Project manager: Kyle Jager??
+-   Project manager: Kyle Jager
 
--   Ensuring tasks are completed in a timely manner
+    -   Ensuring tasks are completed in a timely manner
 
--   Coordinating meetings
+    -   Coordinating meetings
 
 -   Developers: All
 
--   Equal contributions to new features being added to the project
+    -   Equal contributions to new features being added to the project
+ 
+    -   Reviewing and committing pull requests
 
 -   Testers: All
+
+    -   Equal contributions to ensuring features are functioning as expected
 
 ### Communication Plan:
 
@@ -110,6 +114,8 @@ A simple battleship type game run via the command line. 
 -   Weekly meetings
 
 -   Review 2+ days before submission date
+
+-   MS Teams, iMessage
 
 ### Additional Notes:
 
