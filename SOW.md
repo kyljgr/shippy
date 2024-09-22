@@ -13,7 +13,7 @@ Alex Brown, Kyle Jager, Chris Urbano
 
 ### Project Objective:
 
-[Briefly describe the goal of the project. What problem are you trying to solve or what functionality are you aiming to achieve?]
+[comment]: # ([Briefly describe the goal of the project. What problem are you trying to solve or what functionality are you aiming to achieve?])
 
 A simple battleship type game run via the command line. 
 
@@ -21,19 +21,19 @@ A simple battleship type game run via the command line. 
 
 #### Inclusions:
 
--   [List the specific tasks, features, or components that will be included in the project.]
+[comment]: # ([List the specific tasks, features, or components that will be included in the project.])
 
 -   2-player ability 
 
 #### Exclusions:
 
--   [List any tasks, features, or components that will not be included in the project.]
+[comment]: # ([List any tasks, features, or components that will not be included in the project.])
 
 -   No support for more than 2 players
 
 ### Deliverables:
 
--   [List the expected outputs or deliverables from the project, such as a working Python script, documentation, or presentations.]
+[comment]: # ([List the expected outputs or deliverables from the project, such as a working Python script, documentation, or presentations.])
 
 -   Working client & server Python code that can be run by 2 players
 
@@ -43,7 +43,7 @@ A simple battleship type game run via the command line. 
 
 #### Key Milestones:
 
--   [Outline the major milestones or checkpoints throughout the project, with estimated completion dates.]
+[comment]: # ([Outline the major milestones or checkpoints throughout the project, with estimated completion dates.])
 
 -   Sept. 22nd -- Initial Setup, Statement of Work
 
@@ -67,13 +67,13 @@ A simple battleship type game run via the command line. 
 
 #### Hardware:
 
--   [Specify any hardware requirements, such as servers, networking equipment, or specific devices.]
+[comment]: # ([Specify any hardware requirements, such as servers, networking equipment, or specific devices.])
 
 -   ??
 
 #### Software:
 
--   [List the necessary software tools, programming languages (Python), libraries (socket, threading, etc.), and operating systems.]
+[comment]: # "([List the necessary software tools, programming languages (Python), libraries (socket, threading, etc.), and operating systems.])"
 
 -   Python 
 
@@ -83,13 +83,13 @@ A simple battleship type game run via the command line. 
 
 ### Assumptions:
 
--   [State any assumptions that are being made about the project, such as network connectivity or availability of resources.]
+[comment]: # ([State any assumptions that are being made about the project, such as network connectivity or availability of resources.])
 
 -   The two client parties will have internet access.
 
 ### Roles and Responsibilities:
 
--   [Define the roles of team members, including project manager, developers, testers, etc., and their responsibilities.]
+[comment]: # ([Define the roles of team members, including project manager, developers, testers, etc., and their responsibilities.])
 
 -   Project manager: Kyle Jager??
 
@@ -105,7 +105,7 @@ A simple battleship type game run via the command line. 
 
 ### Communication Plan:
 
--   [Outline the communication channels and frequency for project updates, meetings, and decision-making.]
+[comment]: # ([Outline the communication channels and frequency for project updates, meetings, and decision-making.])
 
 -   Weekly meetings
 
@@ -113,4 +113,4 @@ A simple battleship type game run via the command line. 
 
 ### Additional Notes:
 
--   [Include any other relevant information or considerations that are specific to your project.]
+[comment]: # ([Include any other relevant information or considerations that are specific to your project.])
