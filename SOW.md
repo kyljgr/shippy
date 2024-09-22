@@ -3,7 +3,7 @@ Statement of Work (SOW) for Socket Programming Project
 
 ### Project Title:
 
-shippy
+__shippy__
 
 <https://github.com/kyljgr/shippy>
 
