@@ -1,31 +1,5 @@
 import socket
 
-# Work in progress, may not decide on using at all.
-# Server discovery phase using UDP broadcast
-'''
-def discover_server():
-    udp_port = 12358  # Port used for server discovery (UDP broadcast)
-    udp_broadcast_address = ('<broadcast>', udp_port)
-
-    # Create a UDP socket for broadcasting
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
-        udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        udp_socket.settimeout(5)  # Set timeout for response
-
-        # Send a discovery message to the broadcast address
-        udp_socket.sendto(b'DISCOVER_SERVER', udp_broadcast_address)
-        print("Broadcast message sent, waiting for server response...")
-
-        try:
-            # Receive response from the server with its IP address
-            server_addr = udp_socket.recvfrom(1024)
-            print(f"Received server response from {server_addr[0]}")
-            return server_addr[0]  # Return the server's IP address
-        except socket.timeout:
-            print("No response from server. Exiting...")
-            return None
-'''
-
 # TCP communication phase
 def tcp_communication(server_ip, tcp_port=12358):
     try:
