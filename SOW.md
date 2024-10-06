@@ -67,15 +67,18 @@ A command-line Battleship-style game implemented with socket programming, enabli
   * Estimated Time: 1-2 days
 3. Error handling
   * Estimated Time: 1 day
-
+    
+&nbsp;
 - Client code:
 1. Develop client connection and Ui
-  * Estimated Time: 2-3 days
+    - Estimated Time: 2-3 days
 2. Game Logic
-  * Estimated Time: 1-2 days
-Overall Project:
+    - Estimated Time: 1-2 days
+      
+ &nbsp;  
+- Overall Project:
 1. Testing and Integration
-  * Estimated Time: 2-3 days
+    - Estimated Time: 2-3 days
 
 ### Technical Requirements:
 
@@ -98,13 +101,15 @@ Overall Project:
 
 -   Socket programming
 
--   TBD
+-   Will be tested on Windows, Mac, and Linux for cross compatibility
 
 ### Assumptions:
 
 [comment]: # ([State any assumptions that are being made about the project, such as network connectivity or availability of resources.])
 
 -   The two client parties will have internet access.
+
+-   The two client parties will know the private IP that the server is running on.
 
 ### Roles and Responsibilities:
 
