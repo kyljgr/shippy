@@ -5,7 +5,9 @@
 **How to Play**
 1. Clone this repository.
 2. **Start the server:** run the `server.py` script.
+     - Run 'python3 server.py' in a terminal or command prompt while in the directory where your Shippy files are located.
 3. **Connect clients:** Run the `client.py` script on two different machines or terminals.
+     - Input the IP address of the machine your server.py file is running on to connect a client.
 4. **Start playing:** See **Rules**.
 
 **Rules**
