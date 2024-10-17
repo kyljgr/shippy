@@ -1,4 +1,5 @@
 import socket
+import json
 
 # TCP communication phase
 def tcp_communication(server_ip, tcp_port=12358):
@@ -8,23 +9,40 @@ def tcp_communication(server_ip, tcp_port=12358):
             s.settimeout(5)
             s.connect((server_ip, tcp_port))
             print(f"Connected to server {server_ip} on port {tcp_port}")
+            data = s.recv(1024)
+            print(data.decode())
+
+            handle_join(s)
 
             while True:
                 # Send a message to the server
-                message = input("Enter a message to send (or 'q' to exit): ")
-                if message.lower() == 'q':
+                message = input("Enter a command: ")
+                if message.lower() == "quit":
+                    handle_quit(s)
                     print("Closing connection...")
                     return True
-
-                # Send the message over the TCP connection
-                s.sendall(message.encode())
-
-                # Receive the server's response
-                data = s.recv(1024)
-                print('Received from server:', repr(data))
+                else:
+                    print("That command wasn't recognised...")
+                    
     except (socket.error, socket.timeout) as e:
         print(f"Connection failed for {server_ip}. Error: {e}")
         return False
+    
+
+def handle_quit(s):
+    json_q_message = json.dumps({"type": "quit"})
+    s.sendall(json_q_message.encode())
+    data = s.recv(1024)
+    data = json.loads(data.decode())
+    print("Recieved quit response from server: " + data.get("message"))
+
+def handle_join(s):
+    print("Joining game session...")
+    json_j_message = json.dumps({"type": "join"})
+    s.sendall(json_j_message.encode())
+    data = s.recv(1024)
+    data = json.loads(data.decode())
+    print("Recieved join response from server: " + data.get("message"))
 
 
 def is_valid_ip(ip_str):
