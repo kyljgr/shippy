@@ -46,7 +46,6 @@ def handle_join(client_socket, client_address):
 
 def handle_quit(client_socket, client_address):
     # remove client from the game
-    client_socket.sendall(b"Quitting game")
     broadcast_message({"type": "info", "message": f"{client_address} left the game."})
 
 def broadcast_message(message):
