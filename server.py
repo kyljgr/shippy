@@ -5,6 +5,9 @@ import json
 # maintaining clients and connections/states
 clients = {}
 
+# setting max amount of ships
+MAX_SHIPS = 5
+
 # initial server setup
 def handle_client(client_socket, client_address):
     print(f"New connection from {client_address}")
@@ -23,6 +26,8 @@ def handle_client(client_socket, client_address):
             if message_type == "join":
                 handle_join(client_socket, client_address)
             # TODO: move/place functionality
+            elif message_type == "place":
+                handle_place(client_socket, client_address, message)
             # TODO: target functionality
             # TODO: chat functionality
             elif message_type == "quit":
@@ -41,12 +46,40 @@ def handle_client(client_socket, client_address):
 
 def handle_join(client_socket, client_address):
     # add client to the game
-    clients[client_address] = {'socket': client_socket, 'game_state': {}}
+    clients[client_address] = {'socket': client_socket, 'game_state': {'ships': []}}
     broadcast_message({"type": "info", "message": f"{client_address} joined the game."})
+
+def handle_place(client_socket, client_address, message):
+    # ensure client has joined the game (sanity check lol)
+    client_data = clients.get(client_address)
+    if not client_data:
+        client_socket.sendall(json.dumps({"type": "error", "message": "You must join first."}).encode())
+        return
+
+    ships = client_data['game_state']['ships']
+    if len(ships) >= MAX_SHIPS:
+        client_socket.sendall(json.dumps({"type": "error", "message": "Maximum ships placed."}).encode())
+        return
+
+    # extract ship placement from message
+    ship_position = message.get("position")
+    if not ship_position:
+        client_socket.sendall(json.dumps({"type": "error", "message": "Invalid position."}).encode())
+        return
+
+    # add ship to client's game state
+    ships.append(ship_position)
+    
+    # output to server where the ship was placed
+    print(f"Client {client_address} placed a ship at {ship_position}")
+    
+    # send confirmation back to the client
+    client_socket.sendall(json.dumps({"type": "info", "message": f"Ship placed at {ship_position}."}).encode())
 
 def handle_quit(client_socket, client_address):
     # remove client from the game
     broadcast_message({"type": "info", "message": f"{client_address} left the game."})
+    print(f"Client {client_address} left the game")
 
 def broadcast_message(message):
     for client in clients.values():
