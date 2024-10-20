@@ -17,7 +17,9 @@ def tcp_communication(server_ip, tcp_port=12358):
             while True:
                 # Send a message to the server
                 message = input("Enter a command: ")
-                if message.lower() == "quit":
+                if message.lower() == "place":
+                    handle_place(s)
+                elif message.lower() == "quit":
                     handle_quit(s)
                     print("Closing connection...")
                     return True
@@ -28,6 +30,16 @@ def tcp_communication(server_ip, tcp_port=12358):
         print(f"Connection failed for {server_ip}. Error: {e}")
         return False
     
+def handle_place(s):
+    # ask for the ship's position
+    position = input("Enter ship position (e.g., A1): ")
+    json_place_message = json.dumps({"type": "place", "position": position})
+    s.sendall(json_place_message.encode())
+    
+    # get the server response
+    data = s.recv(1024)
+    data = json.loads(data.decode())
+    print("Received response from server: " + data.get("message"))
 
 def handle_quit(s):
     json_q_message = json.dumps({"type": "quit"})
