@@ -79,16 +79,5 @@ The Shippy game uses a JSON-based protocol for communication between the server 
 
 ### Error Handling
 
-If there is an issue with the client's request (e.g., invalid position, target, or unauthorized command), the server responds with an `"error"` message type. The error message will contain a human-readable explanation of the issue.
+If there is an issue with the client's request (e.g., invalid position, target, or unauthorized command), the server responds with an `"error"` message type.
 
-Example error message:
-
-```json
-{
-    "type": "error",
-    "message": "Invalid target"
-}
-
-**Additional Resources**
-* [Python 3.12.6 Documentation](https://docs.python.org/3/)
-* [Python Socket Programming guide from Real Python](https://realpython.com/python-sockets/)
