@@ -1,6 +1,7 @@
 import socket
 import threading
 import json
+import numpy
 
 # maintaining clients and connections/states
 clients = {}
@@ -29,7 +30,11 @@ def handle_client(client_socket, client_address):
             elif message_type == "place":
                 handle_place(client_socket, client_address, message)
             # TODO: target functionality
+            elif message_type == "target":
+                handle_target(client_socket, client_address, message)
             # TODO: chat functionality
+            elif message_type == "chat":
+                handle_chat(client_address, message)
             elif message_type == "quit":
                 handle_quit(client_socket, client_address)
                 break
@@ -46,7 +51,11 @@ def handle_client(client_socket, client_address):
 
 def handle_join(client_socket, client_address):
     # add client to the game
-    clients[client_address] = {'socket': client_socket, 'game_state': {'ships': []}}
+    game_state = {
+        'ships': [], 
+        'targets': numpy.full((10, 10), '^', dtype=object)
+    }
+    clients[client_address] = {'socket': client_socket, 'game_state': game_state}
     broadcast_message({"type": "info", "message": f"{client_address} joined the game."})
 
 def handle_place(client_socket, client_address, message):
@@ -71,10 +80,50 @@ def handle_place(client_socket, client_address, message):
     ships.append(ship_position)
     
     # output to server where the ship was placed
-    print(f"Client {client_address} placed a ship at {ship_position}")
+    print(f"Client {client_address} placed a ship at {ship_position}. Total ships for this player: {len(ships)}")
     
     # send confirmation back to the client
     client_socket.sendall(json.dumps({"type": "info", "message": f"Ship placed at {ship_position}."}).encode())
+
+def handle_target(client_socket, client_address, message):
+    # ensure client has joined the game (sanity check lol)
+    client_data = clients.get(client_address)
+    if not client_data:
+        client_socket.sendall(json.dumps({"type": "error", "message": "You must join first."}).encode())
+        return
+    
+    # ensure target cell has not already been targeted
+    coord_pair = message.get("target")
+    # numerical axis
+    x_coord = int(coord_pair[1:]) - 1
+    # alphabetical axis converted from A-J to 1-10 for indexing
+    y_coord = ord(coord_pair[0].upper()) - ord('A')
+    target = client_data['game_state']['targets'][x_coord, y_coord]
+    if target == '*':
+        client_socket.sendall(json.dumps({"type": "error", "message": "You have already targeted this location."}).encode())
+        return
+
+    # ensure all ships have been placed first
+    ships = client_data['game_state']['ships']
+    if len(ships) != MAX_SHIPS:
+        client_socket.sendall(json.dumps({"type": "error", "message": "You must place all of your ships first."}).encode())
+        return
+
+    #TODO: Signal when a ship is hit by comparing ship locations with targeted cell
+
+    # update target matrix with newly targeted cell
+    client_data['game_state']['targets'][x_coord, y_coord] = "*"
+
+    # output to server the cell that was targeted
+    print(f"Client {client_address} targeted {coord_pair}")
+    
+    # send confirmation back to the client
+    #TODO: if target was a hit specify. if not specify
+    broadcast_message({"type": "info", "message": f"{client_address} fired on {coord_pair}."})
+
+def handle_chat(client_address, message):
+    broadcast_message({"type": "info", "message": message.get("message")})
+    print(f"Client {client_address} sent a chat: {message.get("message")}")
 
 def handle_quit(client_socket, client_address):
     # remove client from the game
