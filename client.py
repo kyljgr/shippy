@@ -17,22 +17,37 @@ def tcp_communication(server_ip, tcp_port=12358):
             while True:
                 # Send a message to the server
                 message = input("Enter a command: ")
-                if message.lower() == "place":
-                    handle_place(s)
-                elif message.lower() == "quit":
+                command, sep, content = message.partition(' ')
+
+                if command.lower() == "place":
+                    handle_place(s, content)
+                elif command.lower() == "target":
+                    handle_target(s, content)
+                elif command.lower() == "chat":
+                    handle_chat(s, content)
+                elif command.lower() == "help":
+                    handle_help()
+                elif command.lower() == "quit":
                     handle_quit(s)
                     print("Closing connection...")
                     return True
                 else:
-                    print("That command wasn't recognised...")
+                    print(f"That command {command} was not recognised...")
                     
     except (socket.error, socket.timeout) as e:
         print(f"Connection failed for {server_ip}. Error: {e}")
         return False
     
-def handle_place(s):
-    # ask for the ship's position
-    position = input("Enter ship position (e.g., A1): ")
+def handle_place(s, place):
+    # the ships position
+    position = place
+    # ensure validity of cell input
+    y_axis = position[0] 
+    x_axis = position[1:]
+    if not is_valid_cell(y_axis, x_axis):
+        print("That position was not recognised. Try the format 'A1'")
+        return
+        
     json_place_message = json.dumps({"type": "place", "position": position})
     s.sendall(json_place_message.encode())
     
@@ -40,6 +55,37 @@ def handle_place(s):
     data = s.recv(1024)
     data = json.loads(data.decode())
     print("Received response from server: " + data.get("message"))
+
+def handle_target(s, target):
+    # the cell to target
+    fire = target
+    # ensure validity of cell input
+    y_axis = fire[0] 
+    x_axis = fire[1:]
+    if not is_valid_cell(y_axis, x_axis):
+        print("That position was not recognised. Try the format 'B2'")
+        return
+
+    json_q_message = json.dumps({"type": "target", "target": fire})
+    s.sendall(json_q_message.encode())
+
+    data = s.recv(1024)
+    data = json.loads(data.decode())
+    print("Recieved targeting response from server: " + data.get("message"))
+
+def handle_chat(s, message):
+    # package message into json to send to server
+    json_q_message = json.dumps({"type": "chat", "message": message})
+    s.sendall(json_q_message.encode())
+
+    # recieve and print out response from server
+    data = s.recv(1024)
+    data = json.loads(data.decode())
+    print("Chat: " + data.get("message"))
+
+def handle_help():
+    #TODO: help info
+    print("help")
 
 def handle_quit(s):
     json_q_message = json.dumps({"type": "quit"})
@@ -56,6 +102,11 @@ def handle_join(s):
     data = json.loads(data.decode())
     print("Recieved join response from server: " + data.get("message"))
 
+
+def is_valid_cell(y_axis, x_axis):
+    if(('a' <= y_axis.lower() <= 'j') and (1 <= int(x_axis) <= 10)):
+        return True
+    return False
 
 def is_valid_ip(ip_str):
     parts = ip_str.split('.')
