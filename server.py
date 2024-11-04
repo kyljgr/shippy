@@ -79,7 +79,7 @@ def handle_join(client_socket, client_address, response_data):
 
     except (json.JSONDecodeError, ValueError) as e:
         print(f"Error handling join request from {client_address}: {e}")
-        client_socket.sendall(json.dumps({"type": "error", "message": "Invalid or empty join request."}).encode())
+        client_socket.sendall((json.dumps({"type": "error", "message": "Invalid or empty join request."}) + "\n").encode())
         return
 
     # Add client to the game
@@ -100,19 +100,12 @@ def handle_join(client_socket, client_address, response_data):
 
     # Send player ID and username back to the client for reference
     print(f"Sending join response to {client_address}")
-    client_socket.sendall(json.dumps({"type": "id", "player_id": player_id, "username": username}).encode())
+    client_socket.sendall((json.dumps({"type": "id", "player_id": player_id, "username": username}) + "\n").encode())
 
-    # Add the player to the global list of players
-    players.append({'id': player_id, 'username': username, 'socket': client_socket})
-
-    # Notify all clients that a new player has joined
+    # Broadcast that a new player has joined and update the game state
     broadcast_message({"type": "info", "message": f"{username} ({player_id}) joined the game."})
+    broadcast_game_state()  # Ensure the updated game state is broadcasted to all clients
 
-    # Send player ID and username back to the client for reference
-    print(f"Sending join response to {client_address}")
-    client_socket.sendall(json.dumps({"type": "id", "player_id": player_id, "username": username}).encode())
-
-    broadcast_game_state()
 
 
 def handle_place(client_socket, client_address, message):
@@ -215,13 +208,7 @@ def broadcast_message(message):
         print(f"Client {client_addr} has been removed due to disconnection.")
         broadcast_game_state()  # Broadcast the updated game state after client disconnection
 
-def broadcast_all(message):
-    """Broadcasts a message to all connected clients."""
-    for client_address, client_info in clients.items():
-        try:
-            client_info['socket'].sendall(json.dumps(message).encode())
-        except socket.error as e:
-            print(f"Failed to send to client {client_address}: {e}")
+
 
 
 def remove_client(client_address):

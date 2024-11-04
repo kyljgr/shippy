@@ -155,7 +155,7 @@ def handle_join(s):
     json_j_message = json.dumps({"type": "join", "username": username})
     try:
         print("Sending join request to the server...")
-        s.sendall(json_j_message.encode())
+        s.sendall((json_j_message + "\n").encode())  # Add newline to mark end of message
         print("Join request sent successfully.")
     except socket.error as e:
         print(f"Error sending join request: {e}")
@@ -164,18 +164,20 @@ def handle_join(s):
     # Receive and process the response from the server
     try:
         print("Waiting for server response...")
-        data = s.recv(1024)
-        if not data:
-            raise ValueError("No response received from server.")
-        data = json.loads(data.decode())
-        print(data.get("message"))
+        data = recv_message(s)  # Use helper to read full message with newline delimiter
+        try:
+            parsed_data = json.loads(data)  # Parse the JSON response
+            print(parsed_data.get("message"))
 
-        # Display the assigned unique ID and username confirmation
-        if "player_id" in data:
-            print(f"Your unique ID: {data['player_id']}")
-            print(f"Your username: {data['username']}")
-    except (json.JSONDecodeError, ValueError.error) as e:
-        print(f"Error receiving response from server: {e}")
+            # Display the assigned unique ID and username confirmation
+            if "player_id" in parsed_data:
+                print(f"Your unique ID: {parsed_data['player_id']}")
+                print(f"Your username: {parsed_data['username']}")
+        except json.JSONDecodeError as e:
+            print(f"Error parsing response from server: {e}")
+    except ValueError as e:
+        print(f"General error receiving response from server: {e}")
+
 
 
 
