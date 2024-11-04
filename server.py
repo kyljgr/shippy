@@ -2,9 +2,14 @@ import socket
 import threading
 import json
 import numpy
+import uuid;
 
 # maintaining clients and connections/states
 clients = {}
+
+# additional global variables for turn management
+players = []  # List to hold connected players
+current_turn_index = 0  # Index to track whose turn it is
 
 # setting max amount of ships
 MAX_SHIPS = 5
@@ -21,18 +26,17 @@ def handle_client(client_socket, client_address):
             if not message:
                 break
             
+            # Parse the received message
             message = json.loads(message.decode())
             message_type = message.get("type")
 
             if message_type == "join":
-                handle_join(client_socket, client_address)
+                handle_join(client_socket, client_address, message)  # Pass 'message' to handle_join()
             # TODO: move/place functionality
             elif message_type == "place":
                 handle_place(client_socket, client_address, message)
-            # TODO: target functionality
             elif message_type == "target":
                 handle_target(client_socket, client_address, message)
-            # TODO: chat functionality
             elif message_type == "chat":
                 handle_chat(client_address, message)
             elif message_type == "quit":
@@ -49,14 +53,56 @@ def handle_client(client_socket, client_address):
     client_socket.close()
     remove_client(client_address)
 
-def handle_join(client_socket, client_address):
-    # add client to the game
+
+def handle_join(client_socket, client_address, response_data):
+    # Create a unique ID for the player
+    player_id = str(uuid.uuid4())
+
+    try:
+        # Use the received response_data directly
+        username = response_data.get("username", f"Player_{player_id[:4]}")  # Default to 'Player_<ID>' if not provided
+
+        # Debugging: print received data
+        print(f"Received join request from {client_address} with data: {response_data}")
+
+    except (json.JSONDecodeError, ValueError) as e:
+        print(f"Error handling join request from {client_address}: {e}")
+        client_socket.sendall(json.dumps({"type": "error", "message": "Invalid or empty join request."}).encode())
+        return
+
+    # Add client to the game
     game_state = {
-        'ships': [], 
+        'ships': [],
         'targets': numpy.full((10, 10), '^', dtype=object)
     }
-    clients[client_address] = {'socket': client_socket, 'game_state': game_state}
-    broadcast_message({"type": "info", "message": f"{client_address} joined the game."})
+
+    clients[client_address] = {
+        'socket': client_socket,
+        'game_state': game_state,
+        'id': player_id,
+        'username': username
+    }
+
+    # Add the player to the global list of players
+    players.append({'id': player_id, 'username': username, 'socket': client_socket})
+
+    # Notify all clients that a new player has joined
+    broadcast_all({"type": "info", "message": f"{username} ({player_id}) joined the game."})
+
+    # Send player ID and username back to the client for reference
+    print(f"Sending join response to {client_address}")
+    client_socket.sendall(json.dumps({"type": "id", "player_id": player_id, "username": username}).encode())
+
+    # Add the player to the global list of players
+    players.append({'id': player_id, 'username': username, 'socket': client_socket})
+
+    # Notify all clients that a new player has joined
+    broadcast_message({"type": "info", "message": f"{username} ({player_id}) joined the game."})
+
+    # Send player ID and username back to the client for reference
+    print(f"Sending join response to {client_address}")
+    client_socket.sendall(json.dumps({"type": "id", "player_id": player_id, "username": username}).encode())
+
 
 def handle_place(client_socket, client_address, message):
     # ensure client has joined the game (sanity check lol)
@@ -136,6 +182,15 @@ def broadcast_message(message):
             client['socket'].sendall(json.dumps(message).encode())
         except socket.error as e:
             print(f"Failed to send to client: {e}")
+
+def broadcast_all(message):
+    """Broadcasts a message to all connected clients."""
+    for client_address, client_info in clients.items():
+        try:
+            client_info['socket'].sendall(json.dumps(message).encode())
+        except socket.error as e:
+            print(f"Failed to send to client {client_address}: {e}")
+
 
 def remove_client(client_address):
     if client_address in clients:

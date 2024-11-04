@@ -96,11 +96,35 @@ def handle_quit(s):
 
 def handle_join(s):
     print("Joining game session...")
-    json_j_message = json.dumps({"type": "join"})
-    s.sendall(json_j_message.encode())
-    data = s.recv(1024)
-    data = json.loads(data.decode())
-    print("Recieved join response from server: " + data.get("message"))
+    # Ask the user to enter a username
+    username = input("Enter your username (or press Enter for default): ")
+
+    # Send join request with the username to the server
+    json_j_message = json.dumps({"type": "join", "username": username})
+    try:
+        print("Sending join request to the server...")
+        s.sendall(json_j_message.encode())
+        print("Join request sent successfully.")
+    except socket.error as e:
+        print(f"Error sending join request: {e}")
+        return
+
+    # Receive and process the response from the server
+    try:
+        print("Waiting for server response...")
+        data = s.recv(1024)
+        if not data:
+            raise ValueError("No response received from server.")
+        data = json.loads(data.decode())
+        print(data.get("message"))
+
+        # Display the assigned unique ID and username confirmation
+        if "player_id" in data:
+            print(f"Your unique ID: {data['player_id']}")
+            print(f"Your username: {data['username']}")
+    except (json.JSONDecodeError, ValueErrort.error) as e:
+        print(f"Error receiving response from server: {e}")
+
 
 
 def is_valid_cell(y_axis, x_axis):
