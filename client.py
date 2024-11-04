@@ -148,15 +148,39 @@ def handle_quit(s):
 
 def handle_join(s):
     print("Joining game session...")
-    json_j_message = json.dumps({"type": "join"})
-    s.sendall((json_j_message + "\n").encode())  # Send with delimiter
-    data = recv_message(s)  # Use helper to read full message
+    # Ask the user to enter a username
+    username = input("Enter your username (or press Enter for default): ")
+
+    # Send join request with the username to the server
+    json_j_message = json.dumps({"type": "join", "username": username})
     try:
-        data = json.loads(data)
-        message = data.get("message", "No message received")
-        print("Recieved join response from server: " + message)
-    except json.JSONDecodeError as e:
-        print(f"Failed to decode server response: {e}")
+        print("Sending join request to the server...")
+        s.sendall((json_j_message + "\n").encode())  # Add newline to mark end of message
+        print("Join request sent successfully.")
+    except socket.error as e:
+        print(f"Error sending join request: {e}")
+        return
+
+    # Receive and process the response from the server
+    try:
+        print("Waiting for server response...")
+        data = recv_message(s)  # Use helper to read full message with newline delimiter
+        try:
+            parsed_data = json.loads(data)  # Parse the JSON response
+            print(parsed_data.get("message"))
+
+            # Display the assigned unique ID and username confirmation
+            if "player_id" in parsed_data:
+                print(f"Your unique ID: {parsed_data['player_id']}")
+                print(f"Your username: {parsed_data['username']}")
+        except json.JSONDecodeError as e:
+            print(f"Error parsing response from server: {e}")
+    except ValueError as e:
+        print(f"General error receiving response from server: {e}")
+
+
+
+
 
 def handle_server_message(s, server_message):
     message = json.loads(server_message.decode())
