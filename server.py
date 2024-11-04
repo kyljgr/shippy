@@ -14,6 +14,18 @@ current_turn_index = 0  # Index to track whose turn it is
 # setting max amount of ships
 MAX_SHIPS = 5
 
+# updating game state after every move
+def broadcast_game_state():
+    """Broadcast the current game state to all connected clients."""
+    game_state_message = {
+        "type": "game_state",
+        "clients": {str(addr): {
+            'ships': data['game_state']['ships'],
+            'targets': data['game_state']['targets'].tolist()  # Convert numpy array to list
+        } for addr, data in clients.items()}
+    }
+    broadcast_message(game_state_message)
+
 # initial server setup
 def handle_client(client_socket, client_address):
     print(f"New connection from {client_address}")
@@ -22,7 +34,7 @@ def handle_client(client_socket, client_address):
     while True:
         try:
             # receive data from client
-            message = client_socket.recv(1024)
+            message = client_socket.recv(4096)
             if not message:
                 break
             
@@ -86,9 +98,6 @@ def handle_join(client_socket, client_address, response_data):
     # Add the player to the global list of players
     players.append({'id': player_id, 'username': username, 'socket': client_socket})
 
-    # Notify all clients that a new player has joined
-    broadcast_all({"type": "info", "message": f"{username} ({player_id}) joined the game."})
-
     # Send player ID and username back to the client for reference
     print(f"Sending join response to {client_address}")
     client_socket.sendall(json.dumps({"type": "id", "player_id": player_id, "username": username}).encode())
@@ -102,6 +111,8 @@ def handle_join(client_socket, client_address, response_data):
     # Send player ID and username back to the client for reference
     print(f"Sending join response to {client_address}")
     client_socket.sendall(json.dumps({"type": "id", "player_id": player_id, "username": username}).encode())
+
+    broadcast_game_state()
 
 
 def handle_place(client_socket, client_address, message):
@@ -129,7 +140,10 @@ def handle_place(client_socket, client_address, message):
     print(f"Client {client_address} placed a ship at {ship_position}. Total ships for this player: {len(ships)}")
     
     # send confirmation back to the client
-    client_socket.sendall(json.dumps({"type": "info", "message": f"Ship placed at {ship_position}."}).encode())
+    client_socket.sendall((json.dumps({"type": "info", "message": f"Ship placed at {ship_position}."}) + "\n").encode())
+
+    # broadcast updated game state after placement
+    broadcast_game_state()
 
 def handle_target(client_socket, client_address, message):
     # ensure client has joined the game (sanity check lol)
@@ -167,6 +181,9 @@ def handle_target(client_socket, client_address, message):
     #TODO: if target was a hit specify. if not specify
     broadcast_message({"type": "info", "message": f"{client_address} fired on {coord_pair}."})
 
+    # broadcast updated game state after targeting
+    broadcast_game_state()
+
 def handle_chat(client_address, message):
     broadcast_message({"type": "info", "message": message.get("message")})
     print(f"Client {client_address} sent a chat: {message.get("message")}")
@@ -176,12 +193,27 @@ def handle_quit(client_socket, client_address):
     broadcast_message({"type": "info", "message": f"{client_address} left the game."})
     print(f"Client {client_address} left the game")
 
+    # broadcast updated game state after a player leaves
+    broadcast_game_state()
+
 def broadcast_message(message):
-    for client in clients.values():
+    disconnected_clients = []
+    for client_addr, client_data in clients.items():
         try:
-            client['socket'].sendall(json.dumps(message).encode())
+            # Send message with a newline delimiter to mark the end of the message
+            client_data['socket'].sendall((json.dumps(message) + "\n").encode())
         except socket.error as e:
-            print(f"Failed to send to client: {e}")
+            print(f"Failed to send to client {client_addr}: {e}")
+            disconnected_clients.append(client_addr)
+
+    # Remove disconnected clients
+    for client_addr in disconnected_clients:
+        remove_client(client_addr)
+
+    # Notify other clients about the disconnections
+    for client_addr in disconnected_clients:
+        print(f"Client {client_addr} has been removed due to disconnection.")
+        broadcast_game_state()  # Broadcast the updated game state after client disconnection
 
 def broadcast_all(message):
     """Broadcasts a message to all connected clients."""

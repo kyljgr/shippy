@@ -1,6 +1,33 @@
 import socket
 import json
 
+# Helper function to receive the full message based on delimiter
+def recv_message(s):
+    buffer = ""
+    while True:
+        data = s.recv(4096).decode()
+        buffer += data
+        if "\n" in buffer:
+            break
+    messages = buffer.split("\n")  # Split messages by newline delimiter
+    return messages[0].strip()  # Return the first complete message
+
+# rendering game state
+def render_game_state(game_state):
+    print("Game State:")
+    for client_address, state in game_state["clients"].items():
+        print(f"Client {client_address}:")
+        print(f"Ships: {state['ships']}")
+        print(f"Targets:")
+        print_board(state['targets'])
+
+# printing board
+def print_board(board):
+    # print grid
+    print("  " + " ".join(str(i+1) for i in range(10)))
+    for i, row in enumerate(board):
+        print(chr(i + 65) + " " + " ".join(row))
+
 # TCP communication phase
 def tcp_communication(server_ip, tcp_port=12358):
     try:
@@ -9,12 +36,21 @@ def tcp_communication(server_ip, tcp_port=12358):
             s.settimeout(5)
             s.connect((server_ip, tcp_port))
             print(f"Connected to server {server_ip} on port {tcp_port}")
-            data = s.recv(1024)
+            data = s.recv(4096)
             print(data.decode())
 
             handle_join(s)
 
             while True:
+                # Check for incoming messages (e.g., game state updates)
+                s.settimeout(0.1)  # non-blocking socket
+                try:
+                    server_message = s.recv(4096)
+                    if server_message:
+                        handle_server_message(s, server_message)
+                except socket.timeout:
+                    pass
+
                 # Send a message to the server
                 message = input("Enter a command: ")
                 command, sep, content = message.partition(' ')
@@ -49,12 +85,16 @@ def handle_place(s, place):
         return
         
     json_place_message = json.dumps({"type": "place", "position": position})
-    s.sendall(json_place_message.encode())
+    s.sendall((json_place_message + "\n").encode())  # Send with delimiter
     
     # get the server response
-    data = s.recv(1024)
-    data = json.loads(data.decode())
-    print("Received response from server: " + data.get("message"))
+    data = recv_message(s)  # Use helper to read full message
+    try:
+        data = json.loads(data)
+        message = data.get("message", "No message received")
+        print("Received response from server: " + message)
+    except json.JSONDecodeError as e:
+        print(f"Failed to decode server response: {e}")
 
 def handle_target(s, target):
     # the cell to target
@@ -67,21 +107,29 @@ def handle_target(s, target):
         return
 
     json_q_message = json.dumps({"type": "target", "target": fire})
-    s.sendall(json_q_message.encode())
+    s.sendall((json_q_message + "\n").encode())  # Send with delimiter
 
-    data = s.recv(1024)
-    data = json.loads(data.decode())
-    print("Recieved targeting response from server: " + data.get("message"))
+    data = recv_message(s)  # Use helper to read full message
+    try:
+        data = json.loads(data)
+        message = data.get("message", "No message received")
+        print("Received targeting response from server: " + message)
+    except json.JSONDecodeError as e:
+        print(f"Failed to decode server response: {e}")
 
 def handle_chat(s, message):
     # package message into json to send to server
     json_q_message = json.dumps({"type": "chat", "message": message})
-    s.sendall(json_q_message.encode())
+    s.sendall((json_q_message + "\n").encode())  # Send with delimiter
 
     # recieve and print out response from server
-    data = s.recv(1024)
-    data = json.loads(data.decode())
-    print("Chat: " + data.get("message"))
+    data = recv_message(s)  # Use helper to read full message
+    try:
+        data = json.loads(data)
+        message = data.get("message", "No message received")
+        print("Chat: " + message)
+    except json.JSONDecodeError as e:
+        print(f"Failed to decode server response: {e}")
 
 def handle_help():
     #TODO: help info
@@ -89,10 +137,14 @@ def handle_help():
 
 def handle_quit(s):
     json_q_message = json.dumps({"type": "quit"})
-    s.sendall(json_q_message.encode())
-    data = s.recv(1024)
-    data = json.loads(data.decode())
-    print("Recieved quit response from server: " + data.get("message"))
+    s.sendall((json_q_message + "\n").encode())  # Send with delimiter
+    data = recv_message(s)  # Use helper to read full message
+    try:
+        data = json.loads(data)
+        message = data.get("message", "No message received")
+        print("Recieved quit response from server: " + message)
+    except json.JSONDecodeError as e:
+        print(f"Failed to decode server response: {e}")
 
 def handle_join(s):
     print("Joining game session...")
@@ -122,10 +174,20 @@ def handle_join(s):
         if "player_id" in data:
             print(f"Your unique ID: {data['player_id']}")
             print(f"Your username: {data['username']}")
-    except (json.JSONDecodeError, ValueErrort.error) as e:
+    except (json.JSONDecodeError, ValueError.error) as e:
         print(f"Error receiving response from server: {e}")
 
 
+
+
+def handle_server_message(s, server_message):
+    message = json.loads(server_message.decode())
+    message_type = message.get("type")
+    
+    if message_type == "game_state":
+        render_game_state(message)
+    elif message_type == "info":
+        print(message.get("message"))
 
 def is_valid_cell(y_axis, x_axis):
     if(('a' <= y_axis.lower() <= 'j') and (1 <= int(x_axis) <= 10)):
