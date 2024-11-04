@@ -6,9 +6,10 @@
 **How to Play**
 1. Clone this repository.
 2. **Start the server:** Run the `server.py` script.
-     - Run `python3 server.py` in a terminal or command prompt while in the directory where your Shippy files are located. **(Sprint 1)**
+     - Run `python3 server.py` in a terminal or command prompt while in the directory where your Shippy files are located.
 3. **Connect clients:** Run the `client.py` script on two different machines or terminals.
-     - Input the IP address of the machine your `server.py` file is running on to connect a client. **(Sprint 1)**
+     - Input the IP address of the machine your `server.py` file is running on to connect a client.
+     - The port number is currently hard coded but will be made customizable in future iterations of the client start up process. 
 4. **Start playing:** See **Rules**.
 
 **Rules**
@@ -22,6 +23,7 @@
 **Technologies Used**
 * Python
 * Sockets
+* Threading
 
 **Message Protocol Specification**
 
@@ -79,5 +81,9 @@ The Shippy game uses a JSON-based protocol for communication between the server 
 
 ### Error Handling
 
-If there is an issue with the client's request (e.g., invalid position, target, or unauthorized command), the server responds with an `"error"` message type.
+If there is an issue with the client's request (e.g., invalid position, target, or unauthorized command), the server responds with an `"error"` message type. The error message is then output to the client, and another action is prompted for. 
+
+### Server Logging
+
+Server logs will be made avaliable in a seperate document in future iterations of the game.
 
