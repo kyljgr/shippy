@@ -286,16 +286,36 @@ def is_valid_ip(ip_str):
   
 
 def main():
-    # Step 1: Discover the server's IP
-    server_ip = input("Enter the server IP to connect to: ")
+    # Ensure the correct number of arguments is provided
+    if len(sys.argv) != 3:
+        print("Usage: python client.py [server_IP/URL] [server_port]")
+        return
+
+    # Get server IP/URL and port from command line arguments
+    server_ip = sys.argv[1]
+    try:
+        server_port = int(sys.argv[2])
+    except ValueError:
+        print("Error: Port must be an integer.")
+        return
+
+    # Main loop for attempting connection
     while True:
-        if is_valid_ip(server_ip): 
-            # Step 2: Connect and start TCP communication with the server
-            if tcp_communication(server_ip):
+        # Step 1: Attempt to resolve the server_ip (URL or IP address)
+        try:
+            # If server_ip is a valid IP, this will succeed, else it will resolve a URL to an IP
+            resolved_ip = server_ip if is_valid_ip(server_ip) else socket.gethostbyname(server_ip)
+
+            # Step 2: Try to establish TCP communication with the resolved IP
+            if tcp_communication(resolved_ip, server_port):
+                break 
+            else:
+                print("Failed to communicate with the server. Retry with the format: python client.py [server_IP/URL] [server_port]")
                 break
-            server_ip = '0'
-        else:
-            server_ip = input("Could not find the server. Please try again using the format ***.***.***.***: ")
+
+        except socket.gaierror:
+            print("Error: Could not resolve the server URL. Please check the URL/IP and try again.")
+            return  # Exit if URL/IP is invalid or cannot be resolved
     
 
 if __name__ == "__main__":

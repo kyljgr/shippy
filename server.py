@@ -215,14 +215,15 @@ def getClientID():
         return "Player 2"
     return "Player 1"
 
-def start_server(tcp_port=12358):
+def start_server(tcp_port=0):
     server_ip = "0.0.0.0"
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind((server_ip, tcp_port))
     server_socket.listen(5)
     
-    print(f"Server started on {server_ip}:{tcp_port}")
+    assigned_port = server_socket.getsockname()[1]
+    print(f"Server started on {server_ip}:{assigned_port}")
 
     try:
         while True:
