@@ -8,7 +8,7 @@
 2. **Start the server:** Run the `server.py` script.
      - Run `python server.py` in a terminal or command prompt while in the directory where your Shippy files are located.
 3. **Connect clients:** Run the `client.py` script on two different machines or terminals.
-     - Input the IP address of the machine your `server.py` file is running on in the format `python client.py [server_IP/URL] [server_port]` to connect a client.
+     - Input the IP address and port number of the machine your `server.py` file is running on in the format `python client.py [server_IP/URL] [server_port]` to connect a client.
      - The port number is dynamically allocated and retrievable from the command line output the server printed upon starting. It will be the second number in the printed `0.0.0.0:[server_port]`.
 4. **Start playing:** See **Rules**.
 
