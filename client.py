@@ -1,74 +1,221 @@
 import socket
 import json
+import threading
+import select
+import queue
+import time
+import sys
 
-# Helper function to receive the full message based on delimiter
-def recv_message(s):
-    buffer = ""
-    while True:
-        data = s.recv(4096).decode()
-        buffer += data
-        if "\n" in buffer:
-            break
-    messages = buffer.split("\n")  # Split messages by newline delimiter
-    return messages[0].strip()  # Return the first complete message
+# Message Queue for storing server responses that need to be printed before asking for input
+mq = queue.Queue()
+# Thread timing event used for prompting user only after mq has had time to process all of its elements
+display_prompt = threading.Event()
+# This clients player ID
+My_Id = ""
+# Boolean to set false when threads need to be ended due to a quit or the other player quitting
+run_threads = True
+# Thread spawned server listening event loop for processing all data that is received from the server
+def handle_server(sock):
+    global My_Id
+    global player_quantity
+    sock.setblocking(False)
 
-# rendering game state
-def render_game_state(game_state):
-    print("Game State:")
-    for client_address, state in game_state["clients"].items():
-        print(f"Client {client_address}:")
-        print(f"Ships: {state['ships']}")
-        print(f"Targets:")
-        print_board(state['targets'])
+    try:
+        while run_threads:
 
-# printing board
-def print_board(board):
-    # print grid
-    print("  " + " ".join(str(i+1) for i in range(10)))
-    for i, row in enumerate(board):
-        print(chr(i + 65) + " " + " ".join(row))
+            read, _, _, = select.select([sock], [], [], 5)
+        
+            if read:
+                # Recieved data should never exceed 1024
+                data = sock.recv(4096)
+                if not data:
+                    mq.put("Server closed the connection.")
+                    break
+
+                data = json.loads(data.decode())
+                message_type = data.get("type")
+                message_content = data.get("message")
+                player_id = data.get("player")
+
+                # Handle server response based on message type received
+                if message_type == "join_response":
+                    response = f"Join response from server: {message_content}"
+                    # Should be set once and not changed after initial join
+                elif message_type == "place_response":
+                    response = f"Place response from server: {message_content}"
+                elif message_type == "target_response":
+                    state = data.get("boards")
+                    response = f"Target response from server: {message_content}" + "\n" + print_boards(state)
+                elif message_type == "chat_response":
+                    response = f"Chat: {message_content}"
+                elif message_type == "quit_response":
+                    response = f"KILL Quit response from server: {message_content}"
+                    mq.put(response)
+                    break
+                elif message_type == "error_response":
+                    response = f"Server response: {message_content}"
+                elif message_type == "third_client":
+                    response = f"KILL Server Response: {message_content}"
+                    mq.put(response)
+                    break
+                else:
+                    response = f"Server response message type not recognised: {message_type}"
+
+                mq.put(player_id + "|" + response)
+
+    except socket.error as e:
+        print("Error while recieving data from server: ", e)
+
+def colored_symbol(symbol):
+    RESET = "\033[0m"    # Reset to default color
+    RED = "\033[31m"
+    GREEN = "\033[32m"
+    YELLOW = "\033[33m"
+    BLUE = "\033[34m"
+    MAGENTA = "\033[35m"
+    CYAN = "\033[36m"
+    GREY = "\033[90m"
+
+    if symbol == 'S':
+        return f"{GREY}{symbol}{RESET}"  # Grey for ships
+    elif symbol == '*':
+        return f"{RED}{symbol}{RESET}"   # Red for hits
+    elif symbol == '~':
+        return f"{CYAN}{symbol}{RESET}"
+    elif symbol == 'o':
+        return f"{BLUE}{symbol}{RESET}"
+    return symbol  # Default color for other symbols
+
+def print_boards(game_state):
+    # Labels for columns and rows
+    boards = ""
+    columns = "  " + " ".join([str(i) for i in range(1, 11)])
+    rows = "ABCDEFGHIJ"  # Row labels for A-J
+
+    # Extract the two boards
+    ship_positions = game_state['ship_positions']
+    target_positions = game_state['target_positions']
+
+    # Create horizontal separator lines for the board edges
+    top_border = "┌" + "─" * 21 + "┐"
+    bottom_border = "└" + "─" * 21 + "┘"
+
+    # Start printing the boards side by side
+    boards += " " * 9 + "Your Ships" + " " * 19 + "Your Targets" + "\n"
+    boards += "   " + columns + "       " + columns + "\n"
+    boards += "   " + top_border + "      " + top_border + "\n"
+
+    # Iterate over each row and print ships and targets side by side
+    for i in range(10):
+        row_label = rows[i]  # Get row label (A-J)
+
+        # Prepare ship and target row as strings
+        ship_row = " ".join(colored_symbol(symbol) for symbol in ship_positions[i])
+        target_row = " ".join(colored_symbol(symbol) for symbol in target_positions[i])
+
+        # Print the row with borders, row label, and ship/target contents
+        boards += f" {row_label} │ {ship_row} │    {row_label} │ {target_row} │" + "\n"
+
+    # Print bottom borders for both boards
+    boards += "   " + bottom_border + "      " + bottom_border + "\n"
+    return boards
+
+
+def print_with_prompt(message, from_me):
+    sys.stdout.write('\r' + ' ' * 80 + '\r')  # Clear line
+    print(message)
+    if not from_me:
+        sys.stdout.write("Enter a command: ")
+        sys.stdout.flush()
+
+
+def handle_input():
+    while run_threads:
+        display_prompt.wait()
+        time.sleep(0.1)
+        command = input("Enter a command: ")
+        mq.put(f"INPUT: {command}")
+        display_prompt.clear()
+
 
 # TCP communication phase
 def tcp_communication(server_ip, tcp_port=12358):
+    global run_threads
     try:
         # Create a TCP socket
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.settimeout(5)
             s.connect((server_ip, tcp_port))
             print(f"Connected to server {server_ip} on port {tcp_port}")
-            data = s.recv(4096)
-            print(data.decode())
+            data = s.recv(1024)
+            data = json.loads(data.decode())
+            run_event_loop = True
+            if data.get("type") == "third_client":
+                run_event_loop = False
+                print(data.get("message"))
+                return True
+            print(data.get("message"))
 
-            handle_join(s)
+            My_Id = data.get("player")
 
-            while True:
-                # Check for incoming messages (e.g., game state updates)
-                s.settimeout(0.1)  # non-blocking socket
-                try:
-                    server_message = s.recv(4096)
-                    if server_message:
-                        handle_server_message(s, server_message)
-                except socket.timeout:
-                    pass
+            if run_event_loop:
+                server_handler = threading.Thread(target=handle_server, args=(s,))
+                server_handler.start()
 
-                # Send a message to the server
-                message = input("Enter a command: ")
-                command, sep, content = message.partition(' ')
+                
+                handle_join(s)
 
-                if command.lower() == "place":
-                    handle_place(s, content)
-                elif command.lower() == "target":
-                    handle_target(s, content)
-                elif command.lower() == "chat":
-                    handle_chat(s, content)
-                elif command.lower() == "help":
-                    handle_help()
-                elif command.lower() == "quit":
-                    handle_quit(s)
-                    print("Closing connection...")
-                    return True
-                else:
-                    print(f"That command {command} was not recognised...")
+                input_handler = threading.Thread(target=handle_input)
+                input_handler.start()
+
+            from_me = True
+
+            while run_event_loop:
+
+                # Execute on user input or print server response from mq
+                while not mq.empty():
+                    message = mq.get()
+                
+                    if message.startswith("INPUT: "):
+                    # Send a message to the server
+                        mess = message[len("INPUT: "):]
+                        command, sep, content = mess.partition(' ')
+                        content = content.strip()
+
+                        if command.lower() == "place":
+                            handle_place(s, content)
+                        elif command.lower() == "target":
+                            handle_target(s, content)
+                        elif command.lower() == "chat":
+                            handle_chat(s, content)
+                        elif command.lower() == "help":
+                            handle_help()
+                        elif command.lower() == "quit":
+                            handle_quit(s)
+                            print("Closing connection...")
+                        else:
+                            print(f"Unrecognized command: {command}")
+                    elif message.startswith("KILL"):
+                        run_threads = False  # Signal the input_handler thread to stop
+                        input_handler.join()
+                        server_handler.join()
+                        message = message[len("KILL "):]
+                        print(message)
+                        return True    
+                    else:
+                        # Print server response
+                        sending_player, prnt = message.split('|', 1)
+
+                        if(sending_player == My_Id):
+                            from_me = True
+                        else:
+                            from_me = False
+                        
+                        print_with_prompt(prnt, from_me)
+                        
+
+                    display_prompt.set()
+
                     
     except (socket.error, socket.timeout) as e:
         print(f"Connection failed for {server_ip}. Error: {e}")
@@ -85,16 +232,8 @@ def handle_place(s, place):
         return
         
     json_place_message = json.dumps({"type": "place", "position": position})
-    s.sendall((json_place_message + "\n").encode())  # Send with delimiter
+    s.sendall(json_place_message.encode())
     
-    # get the server response
-    data = recv_message(s)  # Use helper to read full message
-    try:
-        data = json.loads(data)
-        message = data.get("message", "No message received")
-        print("Received response from server: " + message)
-    except json.JSONDecodeError as e:
-        print(f"Failed to decode server response: {e}")
 
 def handle_target(s, target):
     # the cell to target
@@ -107,29 +246,14 @@ def handle_target(s, target):
         return
 
     json_q_message = json.dumps({"type": "target", "target": fire})
-    s.sendall((json_q_message + "\n").encode())  # Send with delimiter
+    s.sendall(json_q_message.encode())
 
-    data = recv_message(s)  # Use helper to read full message
-    try:
-        data = json.loads(data)
-        message = data.get("message", "No message received")
-        print("Received targeting response from server: " + message)
-    except json.JSONDecodeError as e:
-        print(f"Failed to decode server response: {e}")
 
 def handle_chat(s, message):
     # package message into json to send to server
     json_q_message = json.dumps({"type": "chat", "message": message})
-    s.sendall((json_q_message + "\n").encode())  # Send with delimiter
+    s.sendall(json_q_message.encode())
 
-    # recieve and print out response from server
-    data = recv_message(s)  # Use helper to read full message
-    try:
-        data = json.loads(data)
-        message = data.get("message", "No message received")
-        print("Chat: " + message)
-    except json.JSONDecodeError as e:
-        print(f"Failed to decode server response: {e}")
 
 def handle_help():
     #TODO: help info
@@ -137,59 +261,14 @@ def handle_help():
 
 def handle_quit(s):
     json_q_message = json.dumps({"type": "quit"})
-    s.sendall((json_q_message + "\n").encode())  # Send with delimiter
-    data = recv_message(s)  # Use helper to read full message
-    try:
-        data = json.loads(data)
-        message = data.get("message", "No message received")
-        print("Recieved quit response from server: " + message)
-    except json.JSONDecodeError as e:
-        print(f"Failed to decode server response: {e}")
+    s.sendall(json_q_message.encode())
+
 
 def handle_join(s):
     print("Joining game session...")
-    # Ask the user to enter a username
-    username = input("Enter your username (or press Enter for default): ")
+    json_j_message = json.dumps({"type": "join"})
+    s.sendall(json_j_message.encode())
 
-    # Send join request with the username to the server
-    json_j_message = json.dumps({"type": "join", "username": username})
-    try:
-        print("Sending join request to the server...")
-        s.sendall((json_j_message + "\n").encode())  # Add newline to mark end of message
-        print("Join request sent successfully.")
-    except socket.error as e:
-        print(f"Error sending join request: {e}")
-        return
-
-    # Receive and process the response from the server
-    try:
-        print("Waiting for server response...")
-        data = recv_message(s)  # Use helper to read full message with newline delimiter
-        try:
-            parsed_data = json.loads(data)  # Parse the JSON response
-            print(parsed_data.get("message"))
-
-            # Display the assigned unique ID and username confirmation
-            if "player_id" in parsed_data:
-                print(f"Your unique ID: {parsed_data['player_id']}")
-                print(f"Your username: {parsed_data['username']}")
-        except json.JSONDecodeError as e:
-            print(f"Error parsing response from server: {e}")
-    except ValueError as e:
-        print(f"General error receiving response from server: {e}")
-
-
-
-
-
-def handle_server_message(s, server_message):
-    message = json.loads(server_message.decode())
-    message_type = message.get("type")
-    
-    if message_type == "game_state":
-        render_game_state(message)
-    elif message_type == "info":
-        print(message.get("message"))
 
 def is_valid_cell(y_axis, x_axis):
     if(('a' <= y_axis.lower() <= 'j') and (1 <= int(x_axis) <= 10)):
@@ -207,16 +286,36 @@ def is_valid_ip(ip_str):
   
 
 def main():
-    # Step 1: Discover the server's IP
-    server_ip = input("Enter the server IP to connect to: ")
+    # Ensure the correct number of arguments is provided
+    if len(sys.argv) != 3:
+        print("Usage: python client.py [server_IP/URL] [server_port]")
+        return
+
+    # Get server IP/URL and port from command line arguments
+    server_ip = sys.argv[1]
+    try:
+        server_port = int(sys.argv[2])
+    except ValueError:
+        print("Error: Port must be an integer.")
+        return
+
+    # Main loop for attempting connection
     while True:
-        if is_valid_ip(server_ip): 
-            # Step 2: Connect and start TCP communication with the server
-            if tcp_communication(server_ip):
+        # Step 1: Attempt to resolve the server_ip (URL or IP address)
+        try:
+            # If server_ip is a valid IP, this will succeed, else it will resolve a URL to an IP
+            resolved_ip = server_ip if is_valid_ip(server_ip) else socket.gethostbyname(server_ip)
+
+            # Step 2: Try to establish TCP communication with the resolved IP
+            if tcp_communication(resolved_ip, server_port):
+                break 
+            else:
+                print("Failed to communicate with the server. Retry with the format: python client.py [server_IP/URL] [server_port]")
                 break
-            server_ip = '0'
-        else:
-            server_ip = input("Could not find the server. Please try again using the format ***.***.***.***: ")
+
+        except socket.gaierror:
+            print("Error: Could not resolve the server URL. Please check the URL/IP and try again.")
+            return  # Exit if URL/IP is invalid or cannot be resolved
     
 
 if __name__ == "__main__":
