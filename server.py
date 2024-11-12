@@ -192,7 +192,8 @@ def convert_boards(state):
 
 def handle_chat(client_address, message, client_id):
     broadcast_message({"type": "chat_response", "player": f"{client_id}", "message": message.get("message")})
-    print(f"Client {client_address} sent a chat: {message.get("message")}")
+    p_message = message.get("message")
+    print(f"Client {client_address} sent a chat: {p_message}")
 
 def handle_quit(client_socket, client_address, client_id):
     # remove client from the game
