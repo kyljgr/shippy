@@ -47,7 +47,7 @@ def handle_server(sock):
                     state = data.get("boards")
                     response = f"Target response from server: {message_content}" + "\n" + print_boards(state)
                 elif message_type == "chat_response":
-                    response = f"Chat: {message_content}"
+                    response = f"{player_id}: {message_content}"
                 elif message_type == "quit_response":
                     response = f"KILL Quit response from server: {message_content}"
                     mq.put(response)
