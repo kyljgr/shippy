@@ -286,31 +286,34 @@ def is_valid_ip(ip_str):
   
 
 def main():
-    # Ensure the correct number of arguments is provided
-    if len(sys.argv) != 3:
-        print("Usage: python client.py [server_IP/URL] [server_port]")
-        return
+    server_ip = None
+    server_port = None
 
-    # Get server IP/URL and port from command line arguments
-    server_ip = sys.argv[1]
-    try:
-        server_port = int(sys.argv[2])
-    except ValueError:
-        print("Error: Port must be an integer.")
+    # Parse command-line arguments for flags -i and -p
+    args = sys.argv[1:]
+    for i in range(len(args)):
+        if args[i] == '-i' and i + 1 < len(args):
+            server_ip = args[i + 1]
+        elif args[i] == '-p' and i + 1 < len(args):
+            try:
+                server_port = int(args[i + 1])
+            except ValueError:
+                print("Error: Port must be an integer.")
+                return
+    # Ensure both -i and -p arguments are provided
+    if not server_ip or server_port is None:
+        print("Usage: python client.py -i SERVER_IP/DNS -p PORT")
         return
-
     # Main loop for attempting connection
     while True:
-        # Step 1: Attempt to resolve the server_ip (URL or IP address)
         try:
-            # If server_ip is a valid IP, this will succeed, else it will resolve a URL to an IP
+            # Step 1: Resolve the server IP (URL or IP address)
             resolved_ip = server_ip if is_valid_ip(server_ip) else socket.gethostbyname(server_ip)
-
             # Step 2: Try to establish TCP communication with the resolved IP
             if tcp_communication(resolved_ip, server_port):
-                break 
+                break
             else:
-                print("Failed to communicate with the server. Retry with the format: python client.py [server_IP/URL] [server_port]")
+                print("Failed to communicate with the server. Retry with the format: python client.py -i SERVER_IP/DNS -p PORT")
                 break
 
         except socket.gaierror:

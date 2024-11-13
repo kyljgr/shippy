@@ -2,6 +2,7 @@ import socket
 import threading
 import json
 import numpy
+import sys
 
 # maintaining clients and connections/states
 clients = {}
@@ -216,7 +217,24 @@ def getClientID():
         return "Player 2"
     return "Player 1"
 
-def start_server(tcp_port=0):
+def start_server():
+    tcp_port = None
+
+    # Parse command-line arguments for the `-p` flag
+    args = sys.argv[1:]
+    for i in range(len(args)):
+        if args[i] == '-p' and i + 1 < len(args):
+            try:
+                tcp_port = int(args[i + 1])
+            except ValueError:
+                print("Error: Port must be an integer.")
+                sys.exit(1)
+
+    # Check if the port was provided
+    if tcp_port is None:
+        print("Usage: python server.py -p PORT")
+        sys.exit(1)
+
     server_ip = "0.0.0.0"
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -237,7 +255,6 @@ def start_server(tcp_port=0):
                 client_handler.start()
             else:
                 client_socket.sendall(json.dumps({"type": "third_client", "message": "The maximum number of players has been reached. Please wait for current players to leave their session..."}).encode())
-
 
     except KeyboardInterrupt:
         print("\nServer is shutting down...")
