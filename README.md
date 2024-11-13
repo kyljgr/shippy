@@ -31,7 +31,7 @@ The Shippy game uses a JSON-based protocol for communication between the server 
 
 ### Commands
 
-#### 1. Place Message
+#### 1. Place [coordinate]
 
 - **Type**: `"place"`
 - **Data Fields**:
@@ -41,7 +41,7 @@ The Shippy game uses a JSON-based protocol for communication between the server 
     - **Data Fields**:
         - `"message"`: `"Ship placed at A1"`, `"Invalid position"`, or `"Maximum ships placed"`
 
-#### 2. Target Message
+#### 2. Target [coordinate]
 
 - **Type**: `"target"`
 - **Data Fields**:
@@ -51,7 +51,7 @@ The Shippy game uses a JSON-based protocol for communication between the server 
     - **Data Fields**:
         - `"message"`: `"Fired on B2"`, `"You have already targeted this location"`, or `"You must place all of your ships first"`
 
-#### 3. Chat Message
+#### 3. Chat [Message]
 
 - **Type**: `"chat"`
 - **Data Fields**:
@@ -61,7 +61,7 @@ The Shippy game uses a JSON-based protocol for communication between the server 
     - **Data Fields**:
         - `"message"`: A string with the broadcasted chat message, e.g., `"[Client Name]: Hello!"` (broadcasted to all clients)
 
-#### 4. Quit Message
+#### 4. Quit
 
 - **Type**: `"quit"`
 - **Data Fields**: None
