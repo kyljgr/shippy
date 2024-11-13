@@ -49,7 +49,7 @@ The Shippy game uses a JSON-based protocol for communication between the server 
 - **Expected Response**:
     - **Type**: `"target_response"` or `"error_response"`
     - **Data Fields**:
-        - `"message"`: `"Fired on B2"`, `"You have already targeted this location"`, or `"You must place all of your ships first"`
+        - `"message"`: `"Fired on B2"`, `"You have already targeted this location"`, `"You must place all of your ships first"`, `"Wait for your opponent to place all of their ships."`, or `"Wait for your opponent to make a move."`
 
 #### 3. Chat [Message]
 
