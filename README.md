@@ -33,7 +33,7 @@ The Shippy game uses a JSON-based protocol for communication between the server 
 
 #### 1. Place [coordinate]
 
-- **Type**: `"place"`
+- **Description**: `Places a 1x1 ship on a players board in the format "place [coordinate]"`
 - **Data Fields**:
     - `"position"`: A string representing the ship’s placement on the grid, e.g., `"A1"`.
 - **Expected Response**:
@@ -43,7 +43,7 @@ The Shippy game uses a JSON-based protocol for communication between the server 
 
 #### 2. Target [coordinate]
 
-- **Type**: `"target"`
+- **Description**: `After both players have connected and placed all 5 of their ships, the first player that joined targets the other players ships using "target [coordinate]". The second player follows suit, and so on.`
 - **Data Fields**:
     - `"target"`: A string representing the grid coordinate for targeting a ship, e.g., `"B2"`.
 - **Expected Response**:
@@ -53,22 +53,22 @@ The Shippy game uses a JSON-based protocol for communication between the server 
 
 #### 3. Chat [Message]
 
-- **Type**: `"chat"`
+- **Description**: `Sends a chat message to the other player displaying in both players terminal as [Client Name]: [chat message]. Format is "chat [message]"`
 - **Data Fields**:
     - `"message"`: A string containing the chat message, e.g., `"Hello!"`.
 - **Expected Response**:
     - **Type**: `"chat_response"`
     - **Data Fields**:
-        - `"message"`: A string with the broadcasted chat message, e.g., `"[Client Name]: Hello!"` (broadcasted to all clients)
+        - `"message"`: `"[Client Name]: Hello!"` (Broadcasted to all clients)
 
 #### 4. Quit
 
-- **Type**: `"quit"`
+- **Type**: `Exits players client and disconnects any other connected clients, closing any existing sockets and ressetting the game state to prepare the next pair of clients. Format is "quit"`
 - **Data Fields**: None
 - **Expected Response**:
     - **Type**: `"quit_response"`
     - **Data Fields**:
-        - `"message"`: `"Player [Client Name] left the game."`
+        - `"message"`: `"[Client Name] left the game. Closing both clients and resetting game state...` (Broadcasted to all clients)
 
 ### Error Handling
 
