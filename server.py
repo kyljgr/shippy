@@ -49,7 +49,6 @@ def handle_client(client_socket, client_address):
             break
 
     # disconnect
-    broadcast_message({"type": "quit_response", "player": f"{client_id}", "message": f"{client_id} left the game. Closing both clients and resetting game state..."})
     client_socket.close()
     remove_client(client_address)
     print(f"Closed connection to client {client_address}...")
