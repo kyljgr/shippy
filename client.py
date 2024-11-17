@@ -42,7 +42,8 @@ def handle_server(sock):
                     response = f"Join response from server: {message_content}"
                     # Should be set once and not changed after initial join
                 elif message_type == "place_response":
-                    response = f"Place response from server: {message_content}"
+                    state = data.get("boards")
+                    response = f"Place response from server: {message_content}" + "\n" + print_boards(state)
                 elif message_type == "target_response":
                     state = data.get("boards")
                     response = f"Target response from server: {message_content}" + "\n" + print_boards(state)
@@ -76,12 +77,8 @@ def colored_symbol(symbol):
     CYAN = "\033[36m"
     GREY = "\033[90m"
 
-    if symbol == '<':
-        return f"{GREEN}{symbol}{RESET}"  # Green for ship start
-    elif symbol == '=':
-        return f"{YELLOW}{symbol}{RESET}"  # Yellow for middle of ship
-    elif symbol == '>':
-        return f"{RED}{symbol}{RESET}"  # Red for ship end
+    if symbol in ['▭', '▯', '△', '▷', '▽', '◁']:
+        return f"{YELLOW}{symbol}{RESET}"    
     elif symbol == '*':
         return f"{RED}{symbol}{RESET}"   # Red for hits
     elif symbol == '~':
@@ -139,7 +136,7 @@ def handle_input():
         display_prompt.wait()
         time.sleep(0.1)
         command = input("Enter a command: ")
-        mq.put(f"INPUT: {command}")
+        mq.put(f"INPUT: {command.strip()}")
         display_prompt.clear()
 
 
@@ -188,9 +185,9 @@ def tcp_communication(server_ip, tcp_port=12358):
                         content = content.strip()
 
                         if command.lower() == "place":
-                            handle_place(s, content)
+                            handle_place(s, content.upper())
                         elif command.lower() == "target":
-                            handle_target(s, content)
+                            handle_target(s, content.upper())
                         elif command.lower() == "chat":
                             handle_chat(s, content)
                         elif command.lower() == "help":
@@ -230,10 +227,8 @@ def handle_place(s, place):
     # the ships position
     position = place
     # ensure validity of cell input
-    y_axis = position[0] 
-    x_axis = position[1:]
-    if not is_valid_cell(y_axis, x_axis):
-        print("That position was not recognised. Try the format 'A1'")
+    if not is_valid_ship(position):
+        print("That position was not recognised. Try the format '3 H A1' (ship size: [2-5], Orientation (horizontal/vertical): [H/V], Leftmost/Topmost coordinate of ship: [A1-J10])")
         return
         
     json_place_message = json.dumps({"type": "place", "position": position})
@@ -279,6 +274,36 @@ def is_valid_cell(y_axis, x_axis):
     if(('a' <= y_axis.lower() <= 'j') and (1 <= int(x_axis) <= 10)):
         return True
     return False
+
+def is_valid_ship(input):
+    parts = input.split()
+    
+    # Ensure there are exactly 3 elements (size, orientation, start position)
+    if len(parts) != 3:
+        return False
+    
+    # Extract the three components
+    ship_size, orientation, start_pos = parts
+        
+    # Validate size
+    size = int(ship_size)
+    if not (2 <= size <= 5):  # Adjust size range as per game rules
+        return False
+        
+    # Validate orientation
+    if orientation not in ('H', 'V'):
+        return False
+        
+    # Validate start position
+    row = start_pos[0]
+    if not ('A' <= row <= 'J'):  # Adjust grid row range as per game rules
+        return False
+    column = start_pos[1:]
+    if not (column.isdigit() and 1 <= int(column) <= 10):  # Adjust column range as per game rules
+        return False
+        
+    # All validations passed
+    return True
 
 def is_valid_ip(ip_str):
     parts = ip_str.split('.')
