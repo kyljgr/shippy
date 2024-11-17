@@ -29,13 +29,10 @@ def handle_client(client_socket, client_address):
 
             if message_type == "join":
                 handle_join(client_socket, client_address, client_id)
-            # TODO: move/place functionality
             elif message_type == "place":
                 handle_place(client_socket, client_address, message, client_id)
-            # TODO: target functionality
             elif message_type == "target":
                 handle_target(client_socket, client_address, message, client_id)
-            # TODO: chat functionality
             elif message_type == "chat":
                 handle_chat(client_address, message, client_id)
             elif message_type == "quit":
@@ -53,13 +50,6 @@ def handle_client(client_socket, client_address):
     remove_client(client_address)
     print(f"Closed connection to client {client_address}...")
 
-def getClientID():
-    for id in clients:
-        if id.get('client_id') == "Player 1":
-            return "Player 2"
-        else:
-            return "Player 1"
-
 def handle_join(client_socket, client_address, client_id):
     # game state dictionary
     game_state = {
@@ -71,7 +61,7 @@ def handle_join(client_socket, client_address, client_id):
     # add client to the game
     clients[client_address] = {'socket': client_socket, 'address': client_address, 'game_state': game_state, 'client_id': client_id}
     broadcast_message({"type": "join_response", "player": f"{client_id}", "message": f"{client_id} joined the game."})
-    
+
 def handle_place(client_socket, client_address, message, client_id):
     # ensure client has joined the game (sanity check lol)
     client_data = clients.get(client_address)
@@ -91,8 +81,7 @@ def handle_place(client_socket, client_address, message, client_id):
     x_coord = int(ship_position[1:]) - 1  # numerical axis
     y_coord = ord(ship_position[0].upper()) - ord('A')  # alphabetical axis converted from A-J to 1-10 for indexing
 
-    # ensure there is enough room for a 3-length ship
-    if x_coord + 2 >= 10:
+    if x_coord + 2 >= 10:  # Ensure there's room for a 3-length ship
         client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "Not enough room for ship."}).encode())
         return
 
@@ -133,8 +122,7 @@ def handle_target(client_socket, client_address, message, client_id):
         client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "Wait for another player to join."}).encode())
         return 
 
-    # get the other client's data
-    other_client_data = [c for c in clients.values() if c != client_data][0]  # Get opponent's data
+    other_client_data = [c for c in clients.values() if c != client_data][0]
     others_ships_matrix = other_client_data['game_state']['ship_positions']
 
     # ensure targeted space has not been targeted prior
@@ -144,11 +132,24 @@ def handle_target(client_socket, client_address, message, client_id):
         client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "You have already targeted this location."}).encode())
         return
 
-    # parse target coordinates
-    x_coord = int(target[1:]) - 1  # numerical axis
-    y_coord = ord(target[0].upper()) - ord('A')  # alphabetical axis converted from A-J to 1-10 for indexing
+    # ensure all ships are placed
+    if len(client_data['game_state']['ships']) != MAX_SHIPS:
+        client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "You must place all of your ships first."}).encode())
+        return
+    # ensure opponent has placed all ships
+    if len(other_client_data['game_state']['ships']) != MAX_SHIPS:
+        client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "Wait for your opponent to place all of their ships."}).encode())
+        return
 
-    # check if the target is a hit
+    # ensure turn-based
+    other_targets = other_client_data['game_state']['targets']
+    if (client_id == "Player 1" and len(targets) > len(other_targets)) or (client_id == "Player 2" and len(targets) == len(other_targets)):
+        client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "Wait for your opponent to make a move."}).encode())
+        return
+
+    x_coord = int(target[1:]) - 1
+    y_coord = ord(target[0].upper()) - ord('A')
+
     if others_ships_matrix[y_coord, x_coord] in {'<', '=', '>'}:
         client_data['game_state']['target_positions'][y_coord, x_coord] = '*'
         others_ships_matrix[y_coord, x_coord] = '*'
@@ -162,7 +163,7 @@ def handle_target(client_socket, client_address, message, client_id):
 
     # output to server the cell that was targeted
     print(f"Client {client_address} targeted {target}")
-    
+
     # send confirmation back to the client
     client_socket.sendall(json.dumps({
         "type": "target_response",
@@ -188,8 +189,7 @@ def convert_boards(state):
 
 def handle_chat(client_address, message, client_id):
     broadcast_message({"type": "chat_response", "player": f"{client_id}", "message": message.get("message")})
-    p_message = message.get("message")
-    print(f"Client {client_address} sent a chat: {p_message}")
+    print(f"Client {client_address} sent a chat: {message.get('message')}")
 
 def handle_quit(client_socket, client_address, client_id):
     # remove client from the game
@@ -208,9 +208,7 @@ def remove_client(client_address):
         del clients[client_address]
 
 def getClientID():
-    if(len(clients) > 0):
-        return "Player 2"
-    return "Player 1"
+    return "Player 2" if len(clients) > 0 else "Player 1"
 
 def start_server():
     tcp_port = None
@@ -244,7 +242,7 @@ def start_server():
             # accept new client connections
             client_socket, client_address = server_socket.accept()
 
-            if(len(clients) < 2):
+            if len(clients) < 2:
                 print(f"Accepted connection from {client_address}")
                 client_handler = threading.Thread(target=handle_client, args=(client_socket, client_address))
                 client_handler.start()
@@ -254,10 +252,12 @@ def start_server():
     except KeyboardInterrupt:
         print("\nServer is shutting down...")
     finally:
-        # Cleanup: close all open client sockets
-        for client in clients:
-            client.close()
-        server_socket.close()
+        # clean up
+        for client in clients.values():
+            try:
+                client['socket'].close()
+            except Exception as e:
+                print(f"Error closing socket for client {client['address']}: {e}")
 
 if __name__ == "__main__":
     start_server()
