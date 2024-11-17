@@ -87,28 +87,39 @@ def handle_place(client_socket, client_address, message, client_id):
     # extract ship placement from message
     ship_position = message.get("position").upper()
 
-    # ensure ship does not already exist in this location
-    # Use this when ships is updated to contain coordinate arrays for ships instead of current singular coordinate positions. position_exists = any(ship_position in ship['coordinates'] for ship in ships)
-    # if position_exists:
-    if ship_position in ships:
-        client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "A ship is already placed here. Try a different spot."}).encode())
+    # parse coordinates
+    x_coord = int(ship_position[1:]) - 1  # numerical axis
+    y_coord = ord(ship_position[0].upper()) - ord('A')  # alphabetical axis converted from A-J to 1-10 for indexing
+
+    # ensure there is enough room for a 3-length ship
+    if x_coord + 2 >= 10:
+        client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "Not enough room for ship."}).encode())
+        return
+
+    # ensure the cells are not already occupied
+    ship_matrix = client_data['game_state']['ship_positions']
+    if any(ship_matrix[y_coord, x] != '~' for x in range(x_coord, x_coord + 3)):
+        client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "Cannot place ship here."}).encode())
         return
 
     # add ship to client's list of ship positions
-    ships.append(ship_position)
+    ships.append((y_coord, x_coord, 3))  # Store starting position and length
 
     # add ship to client's ship matrix
-    # numerical axis
-    x_coord = int(ship_position[1:]) - 1
-    # alphabetical axis converted from A-J to 1-10 for indexing
-    y_coord = ord(ship_position[0].upper()) - ord('A')
-    client_data['game_state']['ship_positions'][y_coord, x_coord] = "S"
-    
+    ship_matrix[y_coord, x_coord] = '<'
+    ship_matrix[y_coord, x_coord + 1] = '='
+    ship_matrix[y_coord, x_coord + 2] = '>'
+
     # output to server where the ship was placed
     print(f"Client {client_address} placed a ship at {ship_position}. Total ships for this player: {len(ships)}")
     
     # send confirmation back to the client
-    client_socket.sendall(json.dumps({"type": "place_response", "player": f"{client_id}", "message": f"Ship placed at {ship_position}."}).encode())
+    client_socket.sendall(json.dumps({
+        "type": "place_response",
+        "player": f"{client_id}",
+        "message": f"Ship placed starting at {ship_position}.",
+        "boards": convert_boards(client_data['game_state'])
+    }).encode())
 
 def handle_target(client_socket, client_address, message, client_id):
     # ensure client has joined the game (sanity check lol)
@@ -118,16 +129,14 @@ def handle_target(client_socket, client_address, message, client_id):
         return
     
     # ensure 2 clients are present before targeting
-    if(len(clients) < 2):
+    if len(clients) < 2:
         client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "Wait for another player to join."}).encode())
         return 
-    
-    other_client = client_address
-    
-    for c in clients.values():
-        if c.get('address') != client_address:
-            other_client = c.get('address')         
-    
+
+    # get the other client's data
+    other_client_data = [c for c in clients.values() if c != client_data][0]  # Get opponent's data
+    others_ships_matrix = other_client_data['game_state']['ship_positions']
+
     # ensure targeted space has not been targeted prior
     target = message.get("target").upper()
     targets = client_data['game_state']['targets']
@@ -135,53 +144,40 @@ def handle_target(client_socket, client_address, message, client_id):
         client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "You have already targeted this location."}).encode())
         return
 
-    # ensure all of this clients ships have been placed first
-    ships = client_data['game_state']['ships']
-    if len(ships) != MAX_SHIPS:
-        client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "You must place all of your ships first."}).encode())
-        return
-    
-    # ensure all of the other players ships have been placed as well
-    other_client_data = clients.get(other_client)
-    others_ships = other_client_data['game_state']['ships']
-    if len(others_ships) != MAX_SHIPS:
-        client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "Wait for your opponent to place all of their ships."}).encode())
-        return
-    
-    # ensure turn taking during targeting
-    others_targets = other_client_data['game_state']['targets']
-    print(client_id)
-    if(client_id == "Player 1"):
-        if(len(targets) > len(others_targets)):
-            client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "Wait for your opponent to make a move."}).encode())
-            return
-    if(client_id == "Player 2"):
-        if(len(targets) == len(others_targets)):
-            client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "Wait for your opponent to make a move."}).encode())
-            return
+    # parse target coordinates
+    x_coord = int(target[1:]) - 1  # numerical axis
+    y_coord = ord(target[0].upper()) - ord('A')  # alphabetical axis converted from A-J to 1-10 for indexing
+
+    # check if the target is a hit
+    if others_ships_matrix[y_coord, x_coord] in {'<', '=', '>'}:
+        client_data['game_state']['target_positions'][y_coord, x_coord] = '*'
+        others_ships_matrix[y_coord, x_coord] = '*'
+        result_message = f"{client_id} hit a ship at {target}!"
+    else:
+        client_data['game_state']['target_positions'][y_coord, x_coord] = 'o'
+        result_message = f"{client_id} missed at {target}."
 
     # update list of targets this client has targeted
     targets.append(target)
-
-    # update target matrix with newly targeted cell
-    x_coord = int(target[1:]) - 1
-    # alphabetical axis converted from A-J to 1-10 for indexing
-    y_coord = ord(target[0].upper()) - ord('A')
-    if target in others_ships:
-        client_data['game_state']['target_positions'][y_coord, x_coord] = "*"
-        other_client_data['game_state']['ship_positions'][y_coord, x_coord] = "*"
-    else:
-        client_data['game_state']['target_positions'][y_coord, x_coord] = "o"
-        other_client_data['game_state']['ship_positions'][y_coord, x_coord] = "o"
 
     # output to server the cell that was targeted
     print(f"Client {client_address} targeted {target}")
     
     # send confirmation back to the client
-    #TODO: if target was a hit specify. if not specify
+    client_socket.sendall(json.dumps({
+        "type": "target_response",
+        "player": f"{client_id}",
+        "boards": convert_boards(client_data['game_state']),
+        "message": result_message
+    }).encode())
 
-    client_socket.sendall(json.dumps({"type": "target_response", "player": f"{client_id}", "boards": convert_boards(client_data['game_state']), "message": f"{client_id} fired on {target}."}).encode())
-    other_client_data['socket'].sendall(json.dumps({"type": "target_response", "player": f"{client_id}", "boards": convert_boards(other_client_data['game_state']), "message": f"{client_id} fired on {target}."}).encode())
+    # send response to the other client as well
+    other_client_data['socket'].sendall(json.dumps({
+        "type": "target_response",
+        "player": f"{client_id}",
+        "boards": convert_boards(other_client_data['game_state']),
+        "message": result_message
+    }).encode())
 
 def convert_boards(state):
     boards = {
