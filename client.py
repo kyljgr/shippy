@@ -76,8 +76,12 @@ def colored_symbol(symbol):
     CYAN = "\033[36m"
     GREY = "\033[90m"
 
-    if symbol == 'S':
-        return f"{GREY}{symbol}{RESET}"  # Grey for ships
+    if symbol == '<':
+        return f"{GREEN}{symbol}{RESET}"  # Green for ship start
+    elif symbol == '=':
+        return f"{YELLOW}{symbol}{RESET}"  # Yellow for middle of ship
+    elif symbol == '>':
+        return f"{RED}{symbol}{RESET}"  # Red for ship end
     elif symbol == '*':
         return f"{RED}{symbol}{RESET}"   # Red for hits
     elif symbol == '~':
@@ -85,6 +89,7 @@ def colored_symbol(symbol):
     elif symbol == 'o':
         return f"{BLUE}{symbol}{RESET}"
     return symbol  # Default color for other symbols
+
 
 def print_boards(game_state):
     # Labels for columns and rows
