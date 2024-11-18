@@ -268,38 +268,6 @@ def handle_help():
 
 Shippy: A battleship-like game implemented using Python & sockets
 By Alex Brown, Kyle Jager, and Chris Urbano
-
-------------------------------
-         HOW TO PLAY
-------------------------------
-1. **Clone this repository:**
-   - Run `git clone <repository_url>` to download the game files.
-
-2. **Start the server:**
-   - Navigate to the game directory: `cd /path/to/shippy`
-   - Run the server with `python server.py -p PORT`
-     (Replace `PORT` with a valid port number).
-
-3. **Connect the clients:**
-   - Run the `client.py` file on two different machines or terminals.
-   - Example: `python client.py -i SERVER_IP -p PORT`
-     (Replace `SERVER_IP` and `PORT` with the appropriate values).
-
-4. **Start playing:** Follow the rules below.
-
-------------------------------
-           RULES
-------------------------------
-1. Players must place 5 ships of varying sizes on their 10x10 grid.
-   - Ships can be placed horizontally (H) or vertically (V).
-   - Specify the top-left (for vertical ships) or leftmost (for horizontal ships) coordinate of the ship.
-   - Example: `place 3 H A1` places a ship of size 3 horizontally starting at A1.
-
-2. Players take turns targeting the opponent's grid.
-   - Example: `target B3`.
-
-3. The game continues until one player sinks all opponent ships.
-
 ------------------------------
           COMMANDS
 ------------------------------
@@ -328,15 +296,6 @@ By Alex Brown, Kyle Jager, and Chris Urbano
    - Exits the game and resets the game state.
    - **Example:** `quit`
    - **Response:** "[Player Name] left the game."
-
-------------------------------
-       MESSAGE PROTOCOL
-------------------------------
-Shippy uses a JSON-based protocol for communication:
-- **place**: Request and response include details of the ship's size, orientation, and position.
-- **target**: Request specifies the grid coordinate to target.
-- **chat**: Request includes the text message to be sent.
-- **quit**: Request signals that a player is leaving.
 
 ==============================
         END OF HELP
