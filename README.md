@@ -40,6 +40,9 @@ The Shippy game uses a JSON-based protocol for communication between the server 
     - **Type**: `"place_response"` or `"error_response"`
     - **Data Fields**:
         - `"message"`: `"Ship placed at A1"`, `"Invalid position"`, or `"Maximum ships placed"`
+- **Example Command**:
+  - `place X [length of ship (2-5)] H/V [orientation] A-J1-10 [starting coordinate]`
+  - `place 2 V A1`
 
 #### 2. Target [coordinate]
 
