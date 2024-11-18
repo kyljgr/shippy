@@ -256,8 +256,47 @@ def handle_chat(s, message):
 
 
 def handle_help():
-    #TODO: help info
-    print("help")
+    print("""
+==============================
+       Shippy Help Menu
+==============================
+
+Shippy: A battleship-like game implemented using Python & sockets
+By Alex Brown, Kyle Jager, and Chris Urbano
+------------------------------
+          COMMANDS
+------------------------------
+1. **place [size] [orientation] [coordinate]**
+   - Places a ship on the grid.
+   - **Format:** `place [size] [H/V] [A1-J10]`
+   - **Details:**
+     - `[size]` is the ship's size (2–5).
+     - `[H/V]` specifies horizontal or vertical orientation.
+     - `[A1-J10]` is the grid coordinate for the ship's starting position.
+   - **Example:** `place 3 H A1`
+   - **Response:** "Ship placed at A1" or an error message such as "Invalid position."
+
+2. **target [coordinate]**
+   - Targets a grid coordinate on the opponent's board.
+   - **Format:** `target [A1-J10]`
+   - **Example:** `target C5`
+   - **Response:** "Fired on C5" or an error message.
+
+3. **chat [message]**
+   - Sends a message to the opponent.
+   - **Example:** `chat Hello!`
+   - **Response:** "[Player Name]: Hello!"
+
+4. **quit**
+   - Exits the game and resets the game state.
+   - **Example:** `quit`
+   - **Response:** "[Player Name] left the game."
+
+==============================
+        END OF HELP
+==============================
+""")
+
 
 def handle_quit(s):
     json_q_message = json.dumps({"type": "quit"})
