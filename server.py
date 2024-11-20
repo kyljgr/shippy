@@ -125,9 +125,7 @@ def handle_place(client_socket, client_address, message, client_id, username):
         ship_coords.append(coord)
 
     # Append the ship's coordinates to the list of ships
-    ships.append(ship_coords)
-    print(ships)
-    
+    ships.append(ship_coords)    
 
     # add ship to client's ship matrix
     if(orientation == 'V'):
