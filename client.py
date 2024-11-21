@@ -48,6 +48,10 @@ def handle_server(sock):
                 elif message_type == "target_response":
                     state = data.get("boards")
                     response = f"Target response from server: {message_content}" + "\n" + print_boards(state)
+                    if ("HAS WON" in message_content):
+                        response = f"KILL \nEndgame response from server: {message_content}" + "\n" + print_boards(state)
+                        mq.put(response)
+                        break
                 elif message_type == "chat_response":
                     response = f"{message_content}"
                 elif message_type == "quit_response":
@@ -163,7 +167,7 @@ def tcp_communication(server_ip, tcp_port=12358):
 
             My_Id = data.get("player")
 
-            username_blacklist = ["JOIN", "QUIT", "TARGET", "HELP", "PLACE", "CHAT", "KILL", "PLAYER 1", "PLAYER 2", "INPUT: ", "HAS WON"]
+            username_blacklist = ["JOIN", "QUIT", "TARGET", "HELP", "PLACE", "CHAT", "KILL", "PLAYER 1", "PLAYER 2", "INPUT: ", "HAS WON", "|"]
             while len(username) < 2:
                 username = input("Enter the name you wish to be called (must be at least 2 characters long): ").strip()
                 if any(blacklist_item in username.upper() for blacklist_item in username_blacklist):
@@ -210,27 +214,21 @@ def tcp_communication(server_ip, tcp_port=12358):
                             print(f"Unrecognized command: {command}. Try help for a list of commands.")
                     elif message.startswith("KILL"):
                         run_threads = False  # Signal the input_handler thread to stop
+                        message = message[len("KILL "):]
+                        print_with_prompt(message, from_me=True)
                         input_handler.join()
                         server_handler.join()
-                        message = message[len("KILL "):]
-                        print(message)
                         time.sleep(0.5)
                         return True
-                    elif (("HAS WON" in message) and (My_Id in message)):
-                        print(message[len(My_Id + "|"):])
-                        handle_quit(s)
                     else:
                         # Print server response
                         sending_player, prnt = message.split('|', 1)
-
                         if(sending_player == My_Id):
                             from_me = True
                         else:
                             from_me = False
-                        
                         print_with_prompt(prnt, from_me)
                         
-
                     display_prompt.set()
 
                     
@@ -328,7 +326,7 @@ def handle_join(s):
 
 
 def is_valid_cell(y_axis, x_axis):
-    if(('a' <= y_axis.lower() <= 'j') and (1 <= int(x_axis) <= 10)):
+    if(('a' <= y_axis.lower() <= 'j') and (x_axis.isdigit() and 1 <= int(x_axis) <= 10)):
         return True
     return False
 

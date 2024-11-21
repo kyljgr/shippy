@@ -215,7 +215,7 @@ def handle_target(client_socket, client_address, message, client_id, username):
 
     # Check for win condition
     if numpy.all(~numpy.isin(others_ships_matrix, ['▭', '▯', '△', '▷', '▽', '◁'])):
-        result_message = f"{username} hit a ship at {target}! {username} HAS WON!!! Closing clients..."
+        result_message = f"{username} hit a ship at {target}! {username} HAS WON!!! Closing both clients and resetting game state..."
         print(f"{username} ({client_id}) Has won.")
 
     # send confirmation back to the client
