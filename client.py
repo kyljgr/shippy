@@ -12,12 +12,13 @@ mq = queue.Queue()
 display_prompt = threading.Event()
 # This clients player ID
 My_Id = ""
+# Name given by user for use in print statements
+username = "x"
 # Boolean to set false when threads need to be ended due to a quit or the other player quitting
 run_threads = True
 # Thread spawned server listening event loop for processing all data that is received from the server
 def handle_server(sock):
     global My_Id
-    global player_quantity
     sock.setblocking(False)
 
     try:
@@ -47,8 +48,12 @@ def handle_server(sock):
                 elif message_type == "target_response":
                     state = data.get("boards")
                     response = f"Target response from server: {message_content}" + "\n" + print_boards(state)
+                    if ("HAS WON" in message_content):
+                        response = f"KILL \nEndgame response from server: {message_content}" + "\n" + print_boards(state)
+                        mq.put(response)
+                        break
                 elif message_type == "chat_response":
-                    response = f"{player_id}: {message_content}"
+                    response = f"{message_content}"
                 elif message_type == "quit_response":
                     response = f"KILL Quit response from server: {message_content}"
                     mq.put(response)
@@ -135,13 +140,15 @@ def handle_input():
     while run_threads:
         display_prompt.wait()
         time.sleep(0.1)
+        if not run_threads:
+            break
         command = input("Enter a command: ")
         mq.put(f"INPUT: {command.strip()}")
         display_prompt.clear()
 
-
 # TCP communication phase
 def tcp_communication(server_ip, tcp_port=12358):
+    global username
     global run_threads
     try:
         # Create a TCP socket
@@ -159,6 +166,14 @@ def tcp_communication(server_ip, tcp_port=12358):
             print(data.get("message"))
 
             My_Id = data.get("player")
+
+            username_blacklist = ["JOIN", "QUIT", "TARGET", "HELP", "PLACE", "CHAT", "KILL", "PLAYER 1", "PLAYER 2", "INPUT: ", "HAS WON", "|"]
+            while len(username) < 2:
+                username = input("Enter the name you wish to be called (must be at least 2 characters long): ").strip()
+                if any(blacklist_item in username.upper() for blacklist_item in username_blacklist):
+                    print("Error: This username is blacklisted...")
+                    username = "x"
+            handle_username(s, username)
 
             if run_event_loop:
                 server_handler = threading.Thread(target=handle_server, args=(s,))
@@ -196,32 +211,30 @@ def tcp_communication(server_ip, tcp_port=12358):
                             handle_quit(s)
                             print("Closing connection...")
                         else:
-                            print(f"Unrecognized command: {command}")
+                            print(f"Unrecognized command: {command}. Try help for a list of commands.")
                     elif message.startswith("KILL"):
                         run_threads = False  # Signal the input_handler thread to stop
+                        message = message[len("KILL "):]
+                        print_with_prompt(message, from_me=True)
                         input_handler.join()
                         server_handler.join()
-                        message = message[len("KILL "):]
-                        print(message)
-                        return True    
+                        time.sleep(0.5)
+                        return True
                     else:
                         # Print server response
                         sending_player, prnt = message.split('|', 1)
-
                         if(sending_player == My_Id):
                             from_me = True
                         else:
                             from_me = False
-                        
                         print_with_prompt(prnt, from_me)
                         
-
                     display_prompt.set()
 
                     
     except (socket.error, socket.timeout) as e:
         print(f"Connection failed for {server_ip}. Error: {e}")
-        return False
+        return True
     
 def handle_place(s, place):
     # the ships position
@@ -302,6 +315,9 @@ def handle_quit(s):
     json_q_message = json.dumps({"type": "quit"})
     s.sendall(json_q_message.encode())
 
+def handle_username(s, username):
+    json_u_message = json.dumps({"type": "username", "username": username})
+    s.sendall(json_u_message.encode())
 
 def handle_join(s):
     print("Joining game session...")
@@ -310,7 +326,7 @@ def handle_join(s):
 
 
 def is_valid_cell(y_axis, x_axis):
-    if(('a' <= y_axis.lower() <= 'j') and (1 <= int(x_axis) <= 10)):
+    if(('a' <= y_axis.lower() <= 'j') and (x_axis.isdigit() and 1 <= int(x_axis) <= 10)):
         return True
     return False
 
@@ -386,8 +402,11 @@ def main():
                 break
 
         except socket.gaierror:
-            print("Error: Could not resolve the server URL. Please check the URL/IP and try again.")
+            print("\nError: Could not resolve the server URL. Please check the URL/IP and try again.")
             return  # Exit if URL/IP is invalid or cannot be resolved
+        except KeyboardInterrupt:
+            print("\nClient closed by keyboard interrput.")
+            return
     
 
 if __name__ == "__main__":
