@@ -80,5 +80,5 @@ If there is an issue with the client's request (e.g., invalid position, target, 
 
 ### Server Logging
 
-Server logs will be made avaliable in a seperate document in future iterations of the game.
+All events are logged (but not saved) to the server in simple text format.
 
