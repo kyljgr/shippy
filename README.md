@@ -19,7 +19,6 @@
 * If that coordinate contains a ship, both players will be notified that it was hit, and it will be marked on both boards.
 * To "sink" a ship, all of the coordinates that ship is contained on must be hit (for example: A0, A1, and A2 for a 3L ship).
 * The first player to sink all ships controlled by their opponent wins.
-* `NOTE` No win conditions have been set as of yet, and ships are currently only one coordinate space large.
 
 **Technologies Used**
 * Python
@@ -50,6 +49,7 @@ The Shippy game uses a JSON-based protocol for communication between the server 
 - **Description**: `After both players have connected and placed all 5 of their ships, the first player that joined targets the other players ships using "target [coordinate]". The second player follows suit, and so on.`
 - **Data Fields**:
     - `"target"`: A string representing the grid coordinate for targeting a ship, e.g., `"B2"`.
+    - `target B2`
 - **Expected Response**:
     - **Type**: `"target_response"` or `"error_response"`
     - **Data Fields**:
