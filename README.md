@@ -10,6 +10,7 @@
 3. **Connect clients:** Run the `client.py` script on two different machines or terminals.
      - Input the IP address and port number of the machine your `server.py` file is running on in the format `python client.py -i server_IP/URL -p PORT` to connect a client.
 4. **Start playing:** See **Rules**.
+     - It's helpful to run the command `help` when first starting the game to see these instructions within your client.
 
 **Rules**
 * Each player places 5 different 'boats' on their grid using coordinates on a 10 by 10 grid ordered from A-J and 1-10. `A2` or `j10` for example.
