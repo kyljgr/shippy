@@ -82,3 +82,7 @@ If there is an issue with the client's request (e.g., invalid position, target, 
 
 All events are logged (but not saved) to the server in simple text format.
 
+### Security/Risk Evaluation
+
+The game has a few security issues we need to fix. First off, it doesn't thoroughly check the inputs, which means someone could mess with the game by doing injection attacks or something similar. There's also no way to verify who's who, so it's easy for someone to pretend to be another player or grab their messages. Since all the messages between the server and players are not encrypted, anyone can listen in or interfere with them. The server can also be easily overwhelmed because it doesn’t limit how much data it gets or how often, making it prone to crash under too many requests. Lastly, we're not checking if the data being sent and received is tampered with. In our next updates, we need to clean up the data we get, secure our communications, confirm users’ identities, and make sure the messages are intact to make the game safer.
+
