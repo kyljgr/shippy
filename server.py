@@ -3,6 +3,19 @@ import threading
 import json
 import numpy
 import sys
+import logging
+from datetime import datetime
+
+# Set up logging
+log_filename = datetime.now().strftime("server_%Y%m%d_%H%M%S.log")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),  # Logs to the terminal
+        logging.FileHandler(log_filename)  # Logs to a file
+    ]
+)
 
 # maintaining clients and connections/states
 clients = {}
@@ -18,7 +31,7 @@ def handle_client(client_socket, client_address):
     # Give player id to 1st or 2nd player to join
     client_id = getClientID()
     username = ""
-    print(f"New connection from {client_address} ({client_id})")
+    logging.info(f"New connection from {client_address} ({client_id})")
     client_socket.sendall(json.dumps({"player": f"{client_id}", "message": f"Welcome to Shippy!"}).encode())
     
     while run_thread:
@@ -41,21 +54,21 @@ def handle_client(client_socket, client_address):
                 handle_chat(client_address, message, client_id, username)
             elif message_type == "username":
                 username = message.get("username")
-                print(f"{client_id} has named themselves: {username}.")
+                logging.info(f"{client_id} has named themselves: {username}.")
             elif message_type == "quit":
                 break
             else:
                 client_socket.sendall(b"Invalid message type")
 
         except (socket.error, socket.timeout) as e:
-            print(f"Error with client {client_address}: {e}")
+            logging.error(f"Error with client {client_address}: {e}")
             break
 
     # disconnect
     handle_quit(client_socket, client_address, client_id, username)
     client_socket.close()
     remove_client(client_address)
-    print(f"Closed connection to client {client_address}...")
+    logging.info(f"Closed connection to client {client_address}...")
 
 def handle_join(client_socket, client_address, client_id, username):
     # game state dictionary
@@ -140,7 +153,7 @@ def handle_place(client_socket, client_address, message, client_id, username):
             ship_matrix[y_coord, x_coord + i] = '▭'
 
     # output to server where the ship was placed
-    print(f"{username} placed a ship at {ship_position}. Total ships for this player: {len(ships)}")
+    logging.info(f"{username} placed a ship at {ship_position}. Total ships for this player: {len(ships)}")
     
 
     # '▭', '▯', '△', '▷', '▽', '◁'
@@ -161,11 +174,13 @@ def handle_target(client_socket, client_address, message, client_id, username):
     client_data = clients.get(client_address)
     if not client_data:
         client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "You must join first."}).encode())
+        logging.warning(f"{username} attempted to target but has not joined.")
         return
     
     # ensure 2 clients are present before targeting
     if len(clients) < 2:
         client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "Wait for another player to join."}).encode())
+        logging.warning(f"{username} attempted to target but there are not enough players.")
         return 
 
     other_client_data = [c for c in clients.values() if c != client_data][0]
@@ -176,21 +191,25 @@ def handle_target(client_socket, client_address, message, client_id, username):
     targets = client_data['game_state']['targets']
     if target in targets:
         client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "You have already targeted this location."}).encode())
+        logging.info(f"{username} attempted to target {target} but had already targeted this location.")
         return
 
     # ensure all ships are placed
     if len(client_data['game_state']['ships']) != MAX_SHIPS:
         client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "You must place all of your ships first."}).encode())
+        logging.warning(f"{username} attempted to target before placing all ships.")
         return
     # ensure opponent has placed all ships
     if len(other_client_data['game_state']['ships']) != MAX_SHIPS:
         client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "Wait for your opponent to place all of their ships."}).encode())
+        logging.warning(f"{username} attempted to target before opponent placed all ships.")
         return
 
     # ensure turn-based
     other_targets = other_client_data['game_state']['targets']
     if (client_id == "Player 1" and len(targets) > len(other_targets)) or (client_id == "Player 2" and len(targets) == len(other_targets)):
         client_socket.sendall(json.dumps({"type": "error_response", "player": f"{client_id}", "message": "Wait for your opponent to make a move."}).encode())
+        logging.info(f"{username} attempted to target out of turn.")
         return
 
     x_coord = int(target[1:]) - 1
@@ -200,23 +219,23 @@ def handle_target(client_socket, client_address, message, client_id, username):
         client_data['game_state']['target_positions'][y_coord, x_coord] = '*'
         others_ships_matrix[y_coord, x_coord] = '*'
         result_message = f"{username} hit a ship at {target}!"
-        if(check_sunk_ships(other_client_data['game_state']['ships'], target, targets)):
+        logging.info(result_message)
+        if check_sunk_ships(other_client_data['game_state']['ships'], target, targets):
             result_message += f"\n{username} has sunk a battleship!"
+            logging.info(f"{username} has sunk a battleship!")
     else:
         client_data['game_state']['target_positions'][y_coord, x_coord] = 'o'
         others_ships_matrix[y_coord, x_coord] = 'o'
         result_message = f"{username} missed at {target}."
+        logging.info(result_message)
 
     # update list of targets this client has targeted
     targets.append(target)
 
-    # output to server the cell that was targeted
-    print(f"Client {username} targeted {target}")
-
     # Check for win condition
     if numpy.all(~numpy.isin(others_ships_matrix, ['▭', '▯', '△', '▷', '▽', '◁'])):
         result_message = f"{username} hit a ship at {target}! {username} HAS WON!!! Closing both clients and resetting game state..."
-        print(f"{username} ({client_id}) Has won.")
+        logging.info(f"{username} ({client_id}) has won.")
 
     # send confirmation back to the client
     client_socket.sendall(json.dumps({
@@ -233,6 +252,7 @@ def handle_target(client_socket, client_address, message, client_id, username):
         "boards": convert_boards(other_client_data['game_state']),
         "message": result_message
     }).encode())
+
 
 def check_sunk_ships(ships, current_target, targets):
     for ship in ships:
@@ -258,13 +278,24 @@ def convert_boards(state):
     return boards
 
 def handle_chat(client_address, message, client_id, username):
-    broadcast_message({"type": "chat_response", "player": f"{client_id}", "message": f"{username}: " + message.get("message")})
-    print(f"{username} sent a chat: {message.get('message')}")
+    # Broadcast the chat message to all clients
+    broadcast_message({
+        "type": "chat_response",
+        "player": f"{client_id}",
+        "message": f"{username}: " + message.get("message")
+    })
+    # Log the chat message
+    logging.info(f"{username} sent a chat: {message.get('message')}")
 
 def handle_quit(client_socket, client_address, client_id, username):
-    # remove client from the game
-    broadcast_message({"type": "quit_response", "player": f"{client_id}", "message": f"{username} ({client_id}) left. Closing both clients and resetting game state..."})
-    print(f"Client {client_address} left the game")
+    # Broadcast that the client has quit
+    broadcast_message({
+        "type": "quit_response",
+        "player": f"{client_id}",
+        "message": f"{username} ({client_id}) left. Closing both clients and resetting game state..."
+    })
+    # Log the client disconnect
+    logging.info(f"{username} ({client_id}) left the game. Address: {client_address}")
 
 def broadcast_message(message):
     for client in clients.values():
