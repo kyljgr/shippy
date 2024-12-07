@@ -27,7 +27,6 @@ def handle_server(sock):
             read, _, _, = select.select([sock], [], [], 5)
         
             if read:
-                # Recieved data should never exceed 1024
                 data = sock.recv(4096)
                 if not data:
                     mq.put("Server closed the connection.")
@@ -70,7 +69,7 @@ def handle_server(sock):
                 mq.put(player_id + "|" + response)
 
     except socket.error as e:
-        print("Error while recieving data from server: ", e)
+        print("Error while recieving data from server. Bad data, or client was forcibly closed.")
 
 def colored_symbol(symbol):
     RESET = "\033[0m"    # Reset to default color
@@ -137,14 +136,19 @@ def print_with_prompt(message, from_me):
 
 
 def handle_input():
-    while run_threads:
-        display_prompt.wait()
-        time.sleep(0.1)
-        if not run_threads:
-            break
-        command = input("Enter a command: ")
-        mq.put(f"INPUT: {command.strip()}")
-        display_prompt.clear()
+    try:
+        while run_threads:
+            display_prompt.wait()
+            time.sleep(0.1)
+            if not run_threads:
+                break
+            command = input("Enter a command: ")
+            mq.put(f"INPUT: {command.strip()}")
+            display_prompt.clear()
+    except KeyboardInterrupt:
+        print("Input thread interrupted by Ctrl+C.")
+    except EOFError:
+        print("Input thread received EOF, Likely due to Ctrl+C. Exiting.")
 
 # TCP communication phase
 def tcp_communication(server_ip, tcp_port=12358):
@@ -167,6 +171,7 @@ def tcp_communication(server_ip, tcp_port=12358):
 
             My_Id = data.get("player")
 
+            threads_created = False
             username_blacklist = ["JOIN", "QUIT", "TARGET", "HELP", "PLACE", "CHAT", "KILL", "PLAYER 1", "PLAYER 2", "INPUT: ", "HAS WON", "|"]
             while len(username) < 2:
                 username = input("Enter the name you wish to be called (must be at least 2 characters long): ").strip()
@@ -176,6 +181,7 @@ def tcp_communication(server_ip, tcp_port=12358):
             handle_username(s, username)
 
             if run_event_loop:
+                threads_created = True
                 server_handler = threading.Thread(target=handle_server, args=(s,))
                 server_handler.start()
 
@@ -231,10 +237,20 @@ def tcp_communication(server_ip, tcp_port=12358):
                         
                     display_prompt.set()
 
-                    
+    except KeyboardInterrupt:
+        print("\nClient closed by keyboard interrput.")
+        return True
     except (socket.error, socket.timeout) as e:
         print(f"Connection failed for {server_ip}. Error: {e}")
         return True
+    finally:
+        run_threads = False
+        display_prompt.set()
+        if threads_created:
+            input_handler.join()
+            server_handler.join()
+        time.sleep(0.5)
+
     
 def handle_place(s, place):
     # the ships position
@@ -252,9 +268,7 @@ def handle_target(s, target):
     # the cell to target
     fire = target
     # ensure validity of cell input
-    y_axis = fire[0] 
-    x_axis = fire[1:]
-    if not is_valid_cell(y_axis, x_axis):
+    if not is_valid_cell(fire):
         print("That position was not recognised. Try the format 'B2'")
         return
 
@@ -325,7 +339,11 @@ def handle_join(s):
     s.sendall(json_j_message.encode())
 
 
-def is_valid_cell(y_axis, x_axis):
+def is_valid_cell(fire):
+    if(len(fire) < 2):
+        return False
+    y_axis = fire[0] 
+    x_axis = fire[1:]
     if(('a' <= y_axis.lower() <= 'j') and (x_axis.isdigit() and 1 <= int(x_axis) <= 10)):
         return True
     return False
@@ -407,6 +425,8 @@ def main():
         except KeyboardInterrupt:
             print("\nClient closed by keyboard interrput.")
             return
+        finally:
+            print("Main thread closing...")
     
 
 if __name__ == "__main__":
