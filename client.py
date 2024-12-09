@@ -293,7 +293,7 @@ By Alex Brown, Kyle Jager, and Chris Urbano
 ------------------------------
           COMMANDS
 ------------------------------
-### All commands are case insensitive
+Note: All commands are case insensitive.
 
 1. **Place [size] [H/V] [A1-J10]**  
    - Places a ship on your board.  
@@ -306,7 +306,7 @@ By Alex Brown, Kyle Jager, and Chris Urbano
 2. **Target [A1-J10]**  
    - Targets the opponent's board.  
    - Example: `target C5`  
-     - Example responses: "{username} hit a ship at {target}!", "{username} missed at {target}.", "{username} has sunk a battleship!", or and error message. 
+     - Example responses: "[username] hit a ship at [target]!", "[username] missed at [target].", "[username] has sunk a battleship!", or and error message. 
 
 3. **Chat [message]**  
    - Sends a message to the opponent.  
