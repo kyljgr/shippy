@@ -94,3 +94,38 @@ All events are logged (but not saved) to the server in simple text format.
 
 The game has a few security issues we need to fix. First off, it doesn't thoroughly check the inputs, which means someone could mess with the game by doing injection attacks or something similar. There's also no way to verify who's who, so it's easy for someone to pretend to be another player or grab their messages. Since all the messages between the server and players are not encrypted, anyone can listen in or interfere with them. The server can also be easily overwhelmed because it doesn’t limit how much data it gets or how often, making it prone to crash under too many requests. Lastly, we're not checking if the data being sent and received is tampered with. In our next updates, we need to clean up the data we get, secure our communications, confirm users’ identities, and make sure the messages are intact to make the game safer.
 
+
+### Brief Future Roadmap 
+In the future, there is plenty of room for improvement and several directions we could take for our game. Here are some of our ideas:
+* Improved Security: Address the risks identified, such as unencrypted communication, lack of input validation, and absence of authentication. We could integrate SSL/TLS for encrypted communication and implement user authentication.
+* Enhanced Gameplay:  Adding additional game modes, such as team play or AI opponents, to make the experience more dynamic.
+* Scalability: Adapt the server to support multiple games simultaneously
+Persistent Data: Add features like saving and loading games or player stats.
+* Public Server Hosting: Hosting of a public web server for supporting play over distance/different networks.
+
+### Retrospective of the Production process
+
+**What Went Right**
+* Core Functionality: The project successfully implemented a functional battleship-like game. Players can connect, place ships, and take turns firing at each other, which aligns with the original vision.
+* Collaboration: We all got along with each other and communicated well.
+Socket Communication: Setting up a server-client architecture with Python’s socket library.
+* Message Protocol: The JSON-based protocol for communication worked well, making it easier to manage and debug commands between the server and clients.
+What Could Be Improved
+
+**What Could Be Improved**
+
+**Features**
+* Security Flaws: As highlighted, the game lacks proper security. Inputs aren’t sanitized, messages aren’t encrypted, and there’s no authentication process. These gaps make the game vulnerable to various attacks.
+* User Experience: The terminal-based interface is functional but not user-friendly. Adding a GUI or even improving the command-line prompts could enhance the gameplay experience.
+* Scalability: Currently the server only supports one game session at a time. Enhancing this to allow multiple games at the same time would make the project more robust.
+
+### Creation Process
+
+* Start with asynchronous framework: Initially thinking this game could function on a purely synchronous messaging format was misguided and lazy thinking.
+* Error check in the moment not as an afterthought: Trying to find bugs after the majority of the logic had been written did not make for easy fixes in the long run.
+* Define robust client close/crash behavior first: Defining the behavior for when a client closes proves very difficult when most of the logic has already been written without it, and a reliance on compiler error handling became the norm. Clean shutdown is just as important as clean startup.
+* PLAN TO MAKE A UI FROM THE START: Time wasted and assignment points missed out on to make a likely equally complex terminal interface when creation of a UI from the beginning would have required the same amount of time and effort. At times a terminal interface is more of a restriction than it is an easy alternative to a simple UI.
+
+Overall, this project was a great learning experience. It challenged us to think about networking, game design, and teamwork. While there’s still room for improvement, we’re proud of what we’ve built and excited about its potential for further development.
+
+
