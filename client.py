@@ -293,31 +293,30 @@ By Alex Brown, Kyle Jager, and Chris Urbano
 ------------------------------
           COMMANDS
 ------------------------------
-1. **place [size] [orientation] [coordinate]**
-   - Places a ship on the grid.
-   - **Format:** `place [size] [H/V] [A1-J10]`
-   - **Details:**
-     - `[size]` is the ship's size (2–5).
-     - `[H/V]` specifies horizontal or vertical orientation.
-     - `[A1-J10]` is the grid coordinate for the ship's starting position.
-   - **Example:** `place 3 H A1`
-   - **Response:** "Ship placed at A1" or an error message such as "Invalid position."
+### All commands are case insensitive
 
-2. **target [coordinate]**
-   - Targets a grid coordinate on the opponent's board.
-   - **Format:** `target [A1-J10]`
-   - **Example:** `target C5`
-   - **Response:** "Fired on C5" or an error message.
+1. **Place [size] [H/V] [A1-J10]**  
+   - Places a ship on your board.  
+   - **[size]**: Length of the ship (2–5).  
+   - **[H/V]**: Orientation (`H` for horizontal, `V` for vertical).  
+   - **[A1-J10]**: Starting coordinate for the ship.  
+   - Example: `place 4 H B3`  
+     - Example responses: "Ship placed at B3", or and error message.  
 
-3. **chat [message]**
-   - Sends a message to the opponent.
-   - **Example:** `chat Hello!`
-   - **Response:** "[Player Name]: Hello!"
+2. **Target [A1-J10]**  
+   - Targets the opponent's board.  
+   - Example: `target C5`  
+     - Example responses: "{username} hit a ship at {target}!", "{username} missed at {target}.", "{username} has sunk a battleship!", or and error message. 
 
-4. **quit**
-   - Exits the game and resets the game state.
-   - **Example:** `quit`
-   - **Response:** "[Player Name] left the game."
+3. **Chat [message]**  
+   - Sends a message to the opponent.  
+   - Example: `chat Hello!`  
+     - Example response: "[Client Name]: Hello!"  
+
+4. **Quit**  
+   - Exits the game and resets the state.  
+   - Example: `quit`  
+     - Response: "[Client Name] left the game. Closing both clients and resetting game state..."
 
 ==============================
         END OF HELP
