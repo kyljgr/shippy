@@ -14,6 +14,7 @@
 
 **Rules**
 * Each player places 5 different 'boats' on their grid using coordinates on a 10 by 10 grid ordered from A-J and 1-10. `A2` or `j10` for example.
+* The 5 boats avaliable to be placed are of lengths 2, 3, 3, 4, and 5. See the description of the place command for how to place and orient these ships.
 * Then, each player will take turns "shooting" at their opponent's board, with the goal of hitting a coordinate containing one of their ships.
 * A player "shoots" by naming a coordinate they would like to target.
 * If that coordinate contains a ship, both players will be notified that it was hit, and it will be marked on both boards.
@@ -29,50 +30,57 @@
 
 The Shippy game uses a JSON-based protocol for communication between the server and clients. The protocol defines the structure and format of the messages exchanged during gameplay, including actions like joining the game, placing ships, targeting, chatting, and quitting.
 
-### Commands
+### Commands (All case-insensitive)
 
-#### 1. Place [coordinate]
+#### 1. Help
 
-- **Description**: `Places a 1x1 ship on a players board in the format "place [coordinate]"`
-- **Data Fields**:
-    - `"position"`: A string representing the ship’s placement on the grid, e.g., `"A1"`.
+- **Description**: `Lists commands and their usages.`
+- **Data Fields**: None
+- **Example Commands**:
+    - `help`: Prints this command information page to the terminal.
+
+#### 2. Place [ship length] [orientation] [start coordinate]
+
+- **Description**: `Places a ship on a players board in the format "place [ship length] [orientation] [start coordinate]"`
+- **Data Fields**: 
+    - `"ship length"`: The size of the ship you wish to place. The skiff:`2` One of the two avaliable destroyers:`3` The battleship:`4` The aircraft carrier:`5`.
+    - `"orientation"`: The orientation of the ship either vertical or horizontal. `h` or `v`.
+    - `"start coordinate"`: The left-most, top-most coordinate on the A-J,1-10 coordinate plane that the ship will occupy: `A1` or `d8` or `j10` for example.
 - **Expected Response**:
-    - **Type**: `"place_response"` or `"error_response"`
-    - **Data Fields**:
-        - `"message"`: `"Ship placed at A1"`, `"Invalid position"`, or `"Maximum ships placed"`
-- **Example Command**:
-  - `place X [length of ship (2-5)] H/V [orientation] A-J1-10 [starting coordinate]`
-  - `place 2 V A1`
+    - May include: `"Ship placed at A1"`, `"Not enough room for ship"`, `"A ship already exists in this location"`, `"You have already placed the maximum number of size-{ship_size} ships"`, or `"Maximum ships placed"`
+- **Example Commands**:
+    - `place 2 V A1`: A ship of length 2 oriented vertically which takes up the spaces A1 and B1.
+    - `place 4 h b3`: A ship of length 4 oriented horizontally which takes up the spaces B3, B4, B5 and B6.
 
-#### 2. Target [coordinate]
+#### 3. Target [coordinate]
 
 - **Description**: `After both players have connected and placed all 5 of their ships, the first player that joined targets the other players ships using "target [coordinate]". The second player follows suit, and so on.`
 - **Data Fields**:
-    - `"target"`: A string representing the grid coordinate for targeting a ship, e.g., `"B2"`.
-    - `target B2`
+    - `"coordinate"`: A string representing the grid coordinate for targeting a ship, e.g., `"B2"`.
 - **Expected Response**:
-    - **Type**: `"target_response"` or `"error_response"`
-    - **Data Fields**:
-        - `"message"`: `"Fired on B2"`, `"You have already targeted this location"`, `"You must place all of your ships first"`, `"Wait for your opponent to place all of their ships."`, or `"Wait for your opponent to make a move."`
+    - May include:`"{username} hit a ship at {target}!"`, `"{username} missed at {target}."`, `"{username} has sunk a battleship!"`, `"You have already targeted this location"`, `"You must place all of your ships first"`, `"Wait for your opponent to place all of their ships."`, or `"Wait for your opponent to make a move."`
+- **Example Command**:
+    - `target B2`: Fires at the opponents board at the location B2.
 
-#### 3. Chat [Message]
+#### 4. Chat [Message]
 
 - **Description**: `Sends a chat message to the other player displaying in both players terminal as [Client Name]: [chat message]. Format is "chat [message]"`
 - **Data Fields**:
     - `"message"`: A string containing the chat message, e.g., `"Hello!"`.
 - **Expected Response**:
-    - **Type**: `"chat_response"`
-    - **Data Fields**:
-        - `"message"`: `"[Client Name]: Hello!"` (Broadcasted to all clients)
+    - May include: `"[Client Name]: Hello!"` (Broadcasted to all clients)
+- **Example Command**:
+    - `chat skill issue`: Broadcasts "[client name]: skill issue" to both clients.
 
-#### 4. Quit
+#### 5. Quit
 
 - **Type**: `Exits players client and disconnects any other connected clients, closing any existing sockets and ressetting the game state to prepare the next pair of clients. Format is "quit"`
 - **Data Fields**: None
 - **Expected Response**:
-    - **Type**: `"quit_response"`
-    - **Data Fields**:
-        - `"message"`: `"[Client Name] left the game. Closing both clients and resetting game state...` (Broadcasted to all clients)
+     - Includes: `"[Client Name] left the game. Closing both clients and resetting game state...` (Broadcasted to all clients)
+- **Example Command**:
+    - `quit`: Ends all clients on server (max of 2) and resets the game.
+
 
 ### Error Handling
 
